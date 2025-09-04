@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Olá Mundo + Google Login</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;max-width:720px;margin:40px auto;padding:0 16px}
+    .card{background:#f7f7f8;border-radius:12px;padding:18px}
+    .muted{opacity:.85} img{border-radius:50%}
+    button{padding:10px 14px;border:0;border-radius:10px;background:#1a73e8;color:#fff;cursor:pointer}
+    pre{white-space:pre-wrap;background:#111;color:#eee;padding:12px;border-radius:8px}
+  </style>
+</head>
+<body>
+  <h1>Teste: Olá Mundo com Login Google</h1>
+
+  <div id="login" class="card">
+    <div id="g_id_onload"
+         data-client_id="COLOQUE_SEU_CLIENT_ID_AQUI"
+         data-callback="onCred"
+         data-auto_prompt="false"></div>
+    <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-shape="pill"></div>
+    <p class="muted">Faça login com sua conta de teste.</p>
+  </div>
+
+  <div id="app" class="card" style="display:none">
+    <p>Olá Mundo! 🎉</p>
+    <p>Bem-vindo, <b id="nome"></b> (<span id="email"></span>)</p>
+    <img id="foto" width="64" height="64" alt="">
+    <pre id="out"></pre>
+  </div>
+
+<script>
+const GAS_URL = 'COLOQUE_SUA_GAS_URL_/exec_AQUI';
+
+async function callApi(payload){
+  const r = await fetch(GAS_URL, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(payload)
+  });
+  return r.json();
+}
+
+async function onCred(res){
+  try{
+    const who = await callApi({ action:'whoami', idToken: res.credential });
+    if(!who.ok){ alert('Falha no login: '+(who.error||'')); return; }
+    document.getElementById('login').style.display = 'none';
+    document.getElementById('app').style.display   = 'block';
+    document.getElementById('nome').textContent  = who.name || '(sem nome)';
+    document.getElementById('email').textContent = who.email || '(sem e-mail)';
+    document.getElementById('foto').src = who.picture || '';
+    document.getElementById('out').textContent = JSON.stringify(who, null, 2);
+  }catch(e){
+    alert('Erro: '+e);
+  }
+}
+</script>
+</body>
+</html>

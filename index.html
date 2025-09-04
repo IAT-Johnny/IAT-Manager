@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
-  <title>Olá Mundo + Google Login</title>
+  <title>Teste: Olá Mundo com Login Google</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
@@ -19,15 +19,15 @@
   </style>
 </head>
 <body>
-  <h1>Teste: Olá Mundo com Login Google999</h1>
+  <h1>Teste: Olá Mundo com Login Google321</h1>
   <div class="row">
     <div id="status" class="muted">Inicializando…</div>
     <button id="btnPing" type="button">Testar backend (ping)</button>
+    <button id="btnOpen" type="button" title="Abre a resposta bruta em nova aba">Abrir resposta (debug)</button>
   </div>
 
   <!-- Área de login -->
   <div id="login" class="card" style="display:none">
-    <!-- Inicialização via atributos (popup + FedCM) -->
     <div id="g_id_onload"
          data-client_id="826003708445-8612nadjq2l7ahb4ht0bpq47csp1rbpb.apps.googleusercontent.com"
          data-callback="onCred"
@@ -47,28 +47,26 @@
     <pre id="out"></pre>
   </div>
 
-  <!-- Log de eventos -->
+  <!-- Log -->
   <div class="card">
     <div class="muted">Log</div>
     <pre id="log"></pre>
   </div>
 
 <script>
-/** URL do seu Apps Script /exec */
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbwrYWQ3gVE3wSobk3w049hva6R5wmN9WayxuUh9itl1qvOQVaHXF9_JxEmgSQ9YMliy/exec';
 
-/** Origens aceitas para a resposta do iframe (Apps Script) */
 const ALLOWED_SENDER = [
   'https://script.googleusercontent.com',
   'https://script.google.com'
 ];
 
-const $ = (sel)=>document.querySelector(sel);
-function log(...args){ const line = args.map(a=> (typeof a==='string'?a:JSON.stringify(a))).join(' '); console.log('[LOG]', ...args); const el=$('#log'); el.textContent += line + '\n'; el.scrollTop=el.scrollHeight; }
-function setStatus(txt, ok){ const el=$('#status'); el.textContent=txt; el.classList.toggle('ok', !!ok); el.classList.toggle('err', ok===false); }
+const $ = (s)=>document.querySelector(s);
+function log(...args){ const line=args.map(a=>typeof a==='string'?a:JSON.stringify(a)).join(' '); console.log('[LOG]',...args); const el=$('#log'); el.textContent += line+'\n'; el.scrollTop=el.scrollHeight; }
+function setStatus(txt, ok){ const el=$('#status'); el.textContent=txt; el.classList.toggle('ok',!!ok); el.classList.toggle('err',ok===false); }
 
-/** Envia POST para o GAS dentro de um iframe e recebe a resposta via postMessage */
-function postToGAS(action, data, timeoutMs=15000){
+/* POST via iframe → recebe postMessage do Apps Script */
+function postToGAS(op, data, timeoutMs=15000){
   return new Promise((resolve, reject)=>{
     const frameName = 'bridge_' + Math.random().toString(36).slice(2);
     const iframe = document.createElement('iframe');
@@ -79,16 +77,15 @@ function postToGAS(action, data, timeoutMs=15000){
     let finished = false;
     const onMsg = (ev)=>{
       const ok = ALLOWED_SENDER.some(o => ev.origin === o || ev.origin.endsWith('.googleusercontent.com'));
-      if (!ok) return; // ignora mensagens estranhas
+      if (!ok) return;
       window.removeEventListener('message', onMsg);
       finished = true;
       setTimeout(()=> iframe.remove(), 0);
-      log('postMessage recebido de', ev.origin, 'payload:', ev.data);
+      log('postMessage de', ev.origin, 'payload:', ev.data);
       resolve(ev.data);
     };
     window.addEventListener('message', onMsg);
 
-    // timeout de segurança
     const t = setTimeout(()=>{
       if (finished) return;
       window.removeEventListener('message', onMsg);
@@ -96,45 +93,48 @@ function postToGAS(action, data, timeoutMs=15000){
       reject(new Error('timeout aguardando resposta do backend'));
     }, timeoutMs);
 
-    // Monta e envia um <form> POST para dentro do iframe
     const form = document.createElement('form');
     form.method = 'POST';
     form.action = GAS_URL;
     form.target = frameName;
 
     const add = (k,v)=>{ const i=document.createElement('input'); i.type='hidden'; i.name=k; i.value=v; form.appendChild(i); };
-    add('action', action);
-    add('origin', window.location.origin); // o GAS usa isso para direcionar o postMessage
+    add('op', op);                         // <— usamos "op" no lugar de "action"
+    add('origin', window.location.origin);
     Object.keys(data||{}).forEach(k=> add(k, data[k]));
 
     document.body.appendChild(form);
-    log('Enviando POST → GAS', {action, ...data && {hasToken: !!data.idToken}});
+    log('Enviando POST → GAS', {op, ...data && {hasToken: !!data.idToken}});
     form.submit();
     form.remove();
   });
 }
 
-/** Diagnóstico do prompt (útil quando deslogado/anônimo) */
+/* Botões de diagnóstico */
 window.addEventListener('load', ()=>{
-  // Botão de teste de backend
   $('#btnPing').onclick = async ()=>{
     try{
       setStatus('Testando backend…');
       const ping = await postToGAS('ping', {});
       if (ping && ping.ok) setStatus('Backend OK em ' + new Date(ping.ts).toLocaleString(), true);
       else setStatus('Backend respondeu com erro: ' + (ping && ping.error), false);
+      log('ping resp:', ping);
     } catch(e){
       setStatus('Backend indisponível: ' + e.message, false);
       log('ping erro:', e);
     }
   };
 
-  // Faz um ping automático ao carregar
+  $('#btnOpen').onclick = ()=>{
+    // Abre resposta bruta do GAS para debug (GET JSONP)
+    window.open(GAS_URL + '?op=ping&callback=foo', '_blank');
+  };
+
+  // Faz ping automático ao carregar
   $('#btnPing').click();
 
-  // Diagnóstico visual do prompt do Google
-  // (não impede o login — só informa motivo se o prompt não aparecer)
-  window.setTimeout(()=>{
+  // Diagnóstico do prompt do Google (opcional)
+  setTimeout(()=>{
     if (window.google && google.accounts && google.accounts.id) {
       google.accounts.id.prompt((n)=>{
         const m = $('#motivo');
@@ -144,10 +144,10 @@ window.addEventListener('load', ()=>{
       });
       $('#login').style.display = 'block';
     }
-  }, 500);
+  }, 400);
 });
 
-/** Callback do Google: envia o token ao backend; UI usa a resposta do servidor */
+/* Callback do Google → valida no backend e atualiza UI */
 async function onCred(res){
   try{
     log('onCred chamado:', !!res, res && ('cred…len='+ (res.credential ? res.credential.length : 0)));
@@ -155,9 +155,10 @@ async function onCred(res){
 
     setStatus('Validando token no servidor…');
     const who = await postToGAS('whoami', { idToken: res.credential });
+    log('whoami resp:', who);
+
     if (!who || !who.ok) throw new Error('Falha no login: ' + (who && who.error ? who.error : 'desconhecido'));
 
-    // Atualiza UI
     $('#login').style.display = 'none';
     $('#app').style.display   = 'block';
     $('#nome').textContent    = who.name  || '(sem nome)';
@@ -165,7 +166,6 @@ async function onCred(res){
     if (who.picture) { $('#foto').src = who.picture; $('#foto').style.display='inline-block'; }
     $('#out').textContent     = JSON.stringify(who, null, 2);
     setStatus('Logado com sucesso!', true);
-    log('Login OK:', who);
   }catch(e){
     setStatus('Erro no login: ' + e.message, false);
     log('onCred erro:', e);

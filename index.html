@@ -1,29 +1,27 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8">
-  <title>Olá Mundo + Google Login (JSONP)</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta charset="utf-8" />
+  <title>Olá Mundo + Google Login</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
     body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;max-width:720px;margin:40px auto;padding:0 16px}
     .card{background:#f7f7f8;border-radius:12px;padding:18px}
-    .muted{opacity:.85} img{border-radius:50%}
+    .muted{opacity:.8}
+    img{border-radius:50%}
+    #status{margin-bottom:12px}
     pre{white-space:pre-wrap;background:#111;color:#eee;padding:12px;border-radius:8px}
   </style>
 </head>
 <body>
-  <h1>Teste: Olá Mundo com Login Google</h1>
+  <h1>Teste: Olá Mundo com Login Google666</h1>
 
-  <div id="status" class="muted">Checando conexão com o backend…</div>
+  <div id="status" class="muted">Checando backend…</div>
 
   <div id="login" class="card" style="display:none">
-    <div id="g_id_onload"
-         data-client_id="826003708445-8612nadjq2l7ahb4ht0bpq47csp1rbpb.apps.googleusercontent.com"
-         data-callback="onCred"
-         data-auto_prompt="false"></div>
-    <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-shape="pill"></div>
-    <p class="muted">Faça login com sua conta de teste.</p>
+    <div id="buttonDiv"></div>
+    <p class="muted" id="motivo"></p>
   </div>
 
   <div id="app" class="card" style="display:none">
@@ -34,32 +32,28 @@
   </div>
 
 <script>
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbwrYWQ3gVE3wSobk3w049hva6R5wmN9WayxuUh9itl1qvOQVaHXF9_JxEmgSQ9YMliy/exec';
+/* ===== CONFIG ===== */
+const CLIENT_ID = '826003708445-8612nadjq2l7ahb4ht0bpq47csp1rbpb.apps.googleusercontent.com';
+const GAS_URL   = 'https://script.google.com/macros/s/AKfycbwrYWQ3gVE3wSobk3w049hva6R5wmN9WayxuUh9itl1qvOQVaHXF9_JxEmgSQ9YMliy/exec';
 
 /* ===== JSONP helper (sem CORS) ===== */
 function jsonp(params, onSuccess, onError){
   const cb = 'cb_' + Math.random().toString(36).slice(2);
   window[cb] = function(data){
-    try { onSuccess(data); } finally {
-      delete window[cb];
-      s.remove();
-    }
+    try { onSuccess(data); } finally { delete window[cb]; s.remove(); }
   };
   const q = new URLSearchParams({ ...params, callback: cb }).toString();
   const s = document.createElement('script');
   s.src = GAS_URL + '?' + q;
-  s.onerror = function(){
-    delete window[cb];
-    if (onError) onError(new Error('script load error'));
-  };
+  s.onerror = function(){ delete window[cb]; onError && onError(new Error('script load error')); };
   document.body.appendChild(s);
 }
 
-/* 1) PING: só mostra o botão de login se o backend respondeu */
+/* 1) Verifica o backend antes de mostrar o botão */
 jsonp({ action: 'ping' }, function(resp){
   if (resp && resp.ok) {
     document.getElementById('status').textContent = 'Backend OK.';
-    document.getElementById('login').style.display = 'block';
+    initGoogle();
   } else {
     document.getElementById('status').textContent = 'Backend respondeu com erro: ' + (resp && resp.error);
   }
@@ -67,8 +61,46 @@ jsonp({ action: 'ping' }, function(resp){
   document.getElementById('status').textContent = 'Não consegui contactar o backend. Confira a URL /exec e a implantação.';
 });
 
-/* 2) Login Google → verifica token no backend via JSONP */
+/* 2) Inicializa a lib do Google (popup + FedCM) e renderiza o botão */
+function initGoogle(){
+  // Mostra a área de login
+  document.getElementById('login').style.display = 'block';
+
+  // Inicializa explicitamente
+  google.accounts.id.initialize({
+    client_id: CLIENT_ID,
+    callback: onCred,             // recebe o credential
+    ux_mode: 'popup',             // melhor quando não há sessão
+    use_fedcm_for_prompt: true,   // ajuda em políticas de cookies
+    auto_select: false
+  });
+
+  // Renderiza o botão
+  google.accounts.id.renderButton(
+    document.getElementById('buttonDiv'),
+    { theme: 'outline', size: 'large', shape: 'pill', type: 'standard', logo_alignment: 'left' }
+  );
+
+  // Pede o One Tap/prompt e mostra o motivo caso não apareça
+  google.accounts.id.prompt((notif) => {
+    // Se não exibiu, mostra o motivo (ajuda no diagnóstico)
+    const motivoEl = document.getElementById('motivo');
+    if (notif.isNotDisplayed()) {
+      motivoEl.textContent = 'Aviso: prompt não exibido — motivo: ' + notif.getNotDisplayedReason();
+    } else if (notif.isSkippedMoment && notif.isSkippedMoment()) {
+      motivoEl.textContent = 'Aviso: prompt ignorado — motivo: ' + notif.getSkippedReason();
+    } else {
+      motivoEl.textContent = '';
+    }
+  });
+}
+
+/* 3) Recebe o credential e valida no backend via JSONP */
 function onCred(res){
+  if (!res || !res.credential) {
+    alert('Não foi possível obter o credential do Google.');
+    return;
+  }
   jsonp({ action: 'whoami', idToken: res.credential }, function(who){
     if (!who || !who.ok) {
       alert('Falha no login: ' + (who && who.error ? who.error : 'desconhecido'));

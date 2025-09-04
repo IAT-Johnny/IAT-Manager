@@ -13,9 +13,11 @@
   </style>
 </head>
 <body>
-  <h1>Teste: Olá Mundo com Login Google3</h1>
+  <h1>Teste: Olá Mundo com Login Google4</h1>
 
-  <div id="login" class="card">
+  <div id="status" class="muted">Checando conexão com o backend…</div>
+
+  <div id="login" class="card" style="display:none">
     <div id="g_id_onload"
          data-client_id="826003708445-8612nadjq2l7ahb4ht0bpq47csp1rbpb.apps.googleusercontent.com"
          data-callback="onCred"
@@ -34,26 +36,40 @@
 <script>
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbwrYWQ3gVE3wSobk3w049hva6R5wmN9WayxuUh9itl1qvOQVaHXF9_JxEmgSQ9YMliy/exec';
 
-// ===== JSONP helper (sem CORS) =====
-function callApiJSONP(params, callback){
+// ===== JSONP helper =====
+function jsonp(params, onSuccess, onError){
   const cbName = 'cb_' + Math.random().toString(36).slice(2);
   window[cbName] = function(data){
-    try { callback(data); } finally {
+    try { onSuccess(data); } finally {
       delete window[cbName];
-      script.remove();
+      s.remove();
     }
   };
-  const q = new URLSearchParams({...params, callback: cbName}).toString();
-  const script = document.createElement('script');
-  script.src = GAS_URL + '?' + q;
-  script.onerror = () => { delete window[cbName]; alert('Erro: não foi possível contactar o backend'); };
-  document.body.appendChild(script);
+  const q = new URLSearchParams({ ...params, callback: cbName }).toString();
+  const s = document.createElement('script');
+  s.src = GAS_URL + '?' + q;
+  s.onerror = function(){
+    delete window[cbName];
+    if (onError) onError(new Error('script load error'));
+  };
+  document.body.appendChild(s);
 }
 
-// ===== Callback do Google Identity Services =====
+// 1) PING no backend (sem login). Se falhar aqui, é URL/implantação.
+jsonp({ action: 'ping' }, function(resp){
+  if (resp && resp.ok) {
+    document.getElementById('status').textContent = 'Backend OK.';
+    document.getElementById('login').style.display = 'block';
+  } else {
+    document.getElementById('status').textContent = 'Backend respondeu com erro: ' + (resp && resp.error);
+  }
+}, function(){
+  document.getElementById('status').textContent = 'Não consegui contactar o backend. Confira a URL /exec e a implantação.';
+});
+
+// 2) Depois do login do Google → verificar token no backend
 function onCred(res){
-  // Chama o backend via JSONP (GET) para verificar o token
-  callApiJSONP({ action: 'whoami', idToken: res.credential }, function(who){
+  jsonp({ action: 'whoami', idToken: res.credential }, function(who){
     if (!who || !who.ok) {
       alert('Falha no login: ' + (who && who.error ? who.error : 'desconhecido'));
       return;
@@ -64,6 +80,8 @@ function onCred(res){
     document.getElementById('email').textContent   = who.email || '(sem e-mail)';
     document.getElementById('foto').src            = who.picture || '';
     document.getElementById('out').textContent     = JSON.stringify(who, null, 2);
+  }, function(){
+    alert('Erro: não foi possível contactar o backend (whoami).');
   });
 }
 </script>

@@ -13,10 +13,9 @@
   </style>
 </head>
 <body>
-  <h1>Teste: Olá Mundo com Login Google777</h1>
+  <h1>Teste: Olá Mundo com Login Google888</h1>
 
   <div id="login" class="card">
-    <!-- Inicialização via atributos (popup + FedCM) -->
     <div id="g_id_onload"
          data-client_id="826003708445-8612nadjq2l7ahb4ht0bpq47csp1rbpb.apps.googleusercontent.com"
          data-callback="onCred"
@@ -35,16 +34,16 @@
   </div>
 
 <script>
-/** URL do seu Apps Script (implantação /exec) */
+/* URL do seu Apps Script /exec */
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbwrYWQ3gVE3wSobk3w049hva6R5wmN9WayxuUh9itl1qvOQVaHXF9_JxEmgSQ9YMliy/exec';
 
-/** Origens que aceitaremos como remetente do postMessage vindo do iframe do Apps Script */
+/* Origens aceitas para a resposta do iframe */
 const ALLOWED_SENDER = [
   'https://script.googleusercontent.com',
   'https://script.google.com'
 ];
 
-/** Envia um POST para o GAS dentro de um iframe invisível e espera postMessage com a resposta */
+/* Envia POST para o GAS dentro de um iframe e recebe a resposta via postMessage */
 function postToGAS(action, data){
   return new Promise((resolve, reject)=>{
     const frameName = 'bridge_' + Math.random().toString(36).slice(2);
@@ -54,17 +53,14 @@ function postToGAS(action, data){
     document.body.appendChild(iframe);
 
     const onMsg = (ev)=>{
-      // Aceita mensagens apenas do domínio do Apps Script
       const ok = ALLOWED_SENDER.some(o => ev.origin === o || ev.origin.endsWith('.googleusercontent.com'));
       if (!ok) return;
-
       window.removeEventListener('message', onMsg);
       setTimeout(()=> iframe.remove(), 0);
       resolve(ev.data);
     };
     window.addEventListener('message', onMsg);
 
-    // Monta e envia um <form> POST para dentro do iframe
     const form = document.createElement('form');
     form.method = 'POST';
     form.action = GAS_URL;
@@ -72,7 +68,7 @@ function postToGAS(action, data){
 
     const add = (k,v)=>{ const i=document.createElement('input'); i.type='hidden'; i.name=k; i.value=v; form.appendChild(i); };
     add('action', action);
-    add('origin', window.location.origin); // usado no Code.gs para direcionar o postMessage
+    add('origin', window.location.origin);
     Object.keys(data||{}).forEach(k=> add(k, data[k]));
 
     document.body.appendChild(form);
@@ -81,7 +77,7 @@ function postToGAS(action, data){
   });
 }
 
-/** Diagnóstico do One Tap/Prompt (útil quando está deslogado) */
+/* Diagnóstico do prompt (útil quando deslogado/anônimo) */
 window.addEventListener('load', ()=>{
   if (window.google && google.accounts && google.accounts.id) {
     google.accounts.id.prompt((n)=>{
@@ -93,7 +89,7 @@ window.addEventListener('load', ()=>{
   }
 });
 
-/** Callback do Google Identity Services: recebe o credential e valida no backend */
+/* Callback do Google: envia o token ao backend; UI usa o que vier do servidor */
 async function onCred(res){
   try{
     if (!res || !res.credential) throw new Error('credential ausente');

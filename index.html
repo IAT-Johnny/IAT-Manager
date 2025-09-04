@@ -8,19 +8,22 @@
   <style>
     body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;max-width:720px;margin:40px auto;padding:0 16px}
     .card{background:#f7f7f8;border-radius:12px;padding:18px}
-    .muted{opacity:.8}
-    img{border-radius:50%}
-    #status{margin-bottom:12px}
+    .muted{opacity:.85} img{border-radius:50%}
     pre{white-space:pre-wrap;background:#111;color:#eee;padding:12px;border-radius:8px}
   </style>
 </head>
 <body>
-  <h1>Teste: Olá Mundo com Login Google666</h1>
+  <h1>Teste: Olá Mundo com Login Google777</h1>
 
-  <div id="status" class="muted">Checando backend…</div>
-
-  <div id="login" class="card" style="display:none">
-    <div id="buttonDiv"></div>
+  <div id="login" class="card">
+    <!-- Inicialização via atributos (popup + FedCM) -->
+    <div id="g_id_onload"
+         data-client_id="826003708445-8612nadjq2l7ahb4ht0bpq47csp1rbpb.apps.googleusercontent.com"
+         data-callback="onCred"
+         data-ux_mode="popup"
+         data-use_fedcm_for_prompt="true"
+         data-auto_prompt="false"></div>
+    <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-shape="pill"></div>
     <p class="muted" id="motivo"></p>
   </div>
 
@@ -32,89 +35,81 @@
   </div>
 
 <script>
-/* ===== CONFIG ===== */
-const CLIENT_ID = '826003708445-8612nadjq2l7ahb4ht0bpq47csp1rbpb.apps.googleusercontent.com';
-const GAS_URL   = 'https://script.google.com/macros/s/AKfycbwrYWQ3gVE3wSobk3w049hva6R5wmN9WayxuUh9itl1qvOQVaHXF9_JxEmgSQ9YMliy/exec';
+/** URL do seu Apps Script (implantação /exec) */
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwrYWQ3gVE3wSobk3w049hva6R5wmN9WayxuUh9itl1qvOQVaHXF9_JxEmgSQ9YMliy/exec';
 
-/* ===== JSONP helper (sem CORS) ===== */
-function jsonp(params, onSuccess, onError){
-  const cb = 'cb_' + Math.random().toString(36).slice(2);
-  window[cb] = function(data){
-    try { onSuccess(data); } finally { delete window[cb]; s.remove(); }
-  };
-  const q = new URLSearchParams({ ...params, callback: cb }).toString();
-  const s = document.createElement('script');
-  s.src = GAS_URL + '?' + q;
-  s.onerror = function(){ delete window[cb]; onError && onError(new Error('script load error')); };
-  document.body.appendChild(s);
+/** Origens que aceitaremos como remetente do postMessage vindo do iframe do Apps Script */
+const ALLOWED_SENDER = [
+  'https://script.googleusercontent.com',
+  'https://script.google.com'
+];
+
+/** Envia um POST para o GAS dentro de um iframe invisível e espera postMessage com a resposta */
+function postToGAS(action, data){
+  return new Promise((resolve, reject)=>{
+    const frameName = 'bridge_' + Math.random().toString(36).slice(2);
+    const iframe = document.createElement('iframe');
+    iframe.name = frameName;
+    iframe.style.display = 'none';
+    document.body.appendChild(iframe);
+
+    const onMsg = (ev)=>{
+      // Aceita mensagens apenas do domínio do Apps Script
+      const ok = ALLOWED_SENDER.some(o => ev.origin === o || ev.origin.endsWith('.googleusercontent.com'));
+      if (!ok) return;
+
+      window.removeEventListener('message', onMsg);
+      setTimeout(()=> iframe.remove(), 0);
+      resolve(ev.data);
+    };
+    window.addEventListener('message', onMsg);
+
+    // Monta e envia um <form> POST para dentro do iframe
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = GAS_URL;
+    form.target = frameName;
+
+    const add = (k,v)=>{ const i=document.createElement('input'); i.type='hidden'; i.name=k; i.value=v; form.appendChild(i); };
+    add('action', action);
+    add('origin', window.location.origin); // usado no Code.gs para direcionar o postMessage
+    Object.keys(data||{}).forEach(k=> add(k, data[k]));
+
+    document.body.appendChild(form);
+    form.submit();
+    form.remove();
+  });
 }
 
-/* 1) Verifica o backend antes de mostrar o botão */
-jsonp({ action: 'ping' }, function(resp){
-  if (resp && resp.ok) {
-    document.getElementById('status').textContent = 'Backend OK.';
-    initGoogle();
-  } else {
-    document.getElementById('status').textContent = 'Backend respondeu com erro: ' + (resp && resp.error);
+/** Diagnóstico do One Tap/Prompt (útil quando está deslogado) */
+window.addEventListener('load', ()=>{
+  if (window.google && google.accounts && google.accounts.id) {
+    google.accounts.id.prompt((n)=>{
+      const m = document.getElementById('motivo');
+      if (n.isNotDisplayed()) m.textContent = 'Prompt não exibido: ' + n.getNotDisplayedReason();
+      else if (n.isSkippedMoment && n.isSkippedMoment()) m.textContent = 'Prompt ignorado: ' + n.getSkippedReason();
+      else m.textContent = '';
+    });
   }
-}, function(){
-  document.getElementById('status').textContent = 'Não consegui contactar o backend. Confira a URL /exec e a implantação.';
 });
 
-/* 2) Inicializa a lib do Google (popup + FedCM) e renderiza o botão */
-function initGoogle(){
-  // Mostra a área de login
-  document.getElementById('login').style.display = 'block';
+/** Callback do Google Identity Services: recebe o credential e valida no backend */
+async function onCred(res){
+  try{
+    if (!res || !res.credential) throw new Error('credential ausente');
 
-  // Inicializa explicitamente
-  google.accounts.id.initialize({
-    client_id: CLIENT_ID,
-    callback: onCred,             // recebe o credential
-    ux_mode: 'popup',             // melhor quando não há sessão
-    use_fedcm_for_prompt: true,   // ajuda em políticas de cookies
-    auto_select: false
-  });
+    const who = await postToGAS('whoami', { idToken: res.credential });
+    if (!who || !who.ok) throw new Error('Falha no login: ' + (who && who.error ? who.error : 'desconhecido'));
 
-  // Renderiza o botão
-  google.accounts.id.renderButton(
-    document.getElementById('buttonDiv'),
-    { theme: 'outline', size: 'large', shape: 'pill', type: 'standard', logo_alignment: 'left' }
-  );
-
-  // Pede o One Tap/prompt e mostra o motivo caso não apareça
-  google.accounts.id.prompt((notif) => {
-    // Se não exibiu, mostra o motivo (ajuda no diagnóstico)
-    const motivoEl = document.getElementById('motivo');
-    if (notif.isNotDisplayed()) {
-      motivoEl.textContent = 'Aviso: prompt não exibido — motivo: ' + notif.getNotDisplayedReason();
-    } else if (notif.isSkippedMoment && notif.isSkippedMoment()) {
-      motivoEl.textContent = 'Aviso: prompt ignorado — motivo: ' + notif.getSkippedReason();
-    } else {
-      motivoEl.textContent = '';
-    }
-  });
-}
-
-/* 3) Recebe o credential e valida no backend via JSONP */
-function onCred(res){
-  if (!res || !res.credential) {
-    alert('Não foi possível obter o credential do Google.');
-    return;
-  }
-  jsonp({ action: 'whoami', idToken: res.credential }, function(who){
-    if (!who || !who.ok) {
-      alert('Falha no login: ' + (who && who.error ? who.error : 'desconhecido'));
-      return;
-    }
     document.getElementById('login').style.display = 'none';
     document.getElementById('app').style.display   = 'block';
     document.getElementById('nome').textContent    = who.name  || '(sem nome)';
     document.getElementById('email').textContent   = who.email || '(sem e-mail)';
     document.getElementById('foto').src            = who.picture || '';
     document.getElementById('out').textContent     = JSON.stringify(who, null, 2);
-  }, function(){
-    alert('Erro: não foi possível contactar o backend (whoami).');
-  });
+  }catch(e){
+    alert('Erro: ' + e.message);
+  }
 }
 </script>
 </body>

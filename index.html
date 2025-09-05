@@ -2,163 +2,281 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
-  <title>Teste: Olá Mundo com Login Google</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Agendamento de Prova</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
-    body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;max-width:860px;margin:40px auto;padding:0 16px}
-    .card{background:#f7f7f8;border-radius:12px;padding:18px;margin-top:12px}
-    .muted{opacity:.75}
-    pre{white-space:pre-wrap;background:#111;color:#eee;padding:12px;border-radius:8px;max-height:260px;overflow:auto}
+    :root{--bg:#f6f7fb;--card:#fff;--fg:#111;--muted:#666;--pri:#1a73e8;}
+    body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--fg);margin:0}
+    .wrap{max-width:900px;margin:32px auto;padding:0 16px}
+    .card{background:var(--card);border-radius:16px;padding:16px 18px;box-shadow:0 12px 32px rgba(20,20,20,.06)}
+    h1{font-size:28px;margin:6px 0 16px}
+    .muted{color:var(--muted)}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+    label{display:block;font-size:13px;margin-top:10px}
+    input,select,textarea{width:100%;padding:10px 12px;border:1px solid #d9dbe0;border-radius:10px;background:#fff;font:inherit}
+    textarea{min-height:80px;resize:vertical}
+    button{background:var(--pri);color:#fff;border:0;padding:10px 16px;border-radius:12px;cursor:pointer}
+    .ok{color:#137333}.err{color:#b00020}
     img{border-radius:50%}
-    button{padding:10px 14px;border:0;border-radius:10px;background:#1a73e8;color:#fff;cursor:pointer}
-    #status.ok{color:green} #status.err{color:#b91c1c}
+    .sp{height:10px}
+    pre{white-space:pre-wrap;background:#0f1115;color:#dfe1e5;padding:10px;border-radius:10px;font-size:12px}
   </style>
 </head>
 <body>
-  <h1>Teste: Olá Mundo com Login Google16</h1>
+<div class="wrap">
+  <h1>Agendamento de Prova</h1>
 
-  <div class="card">
-    <button id="btnPing" type="button">Testar backend (ping)</button>
-    <span id="status" class="muted">Aguardando…</span>
-  </div>
-
-  <div id="login" class="card">
+  <div id="auth" class="card">
     <div id="g_id_onload"
          data-client_id="826003708445-8612nadjq2l7ahb4ht0bpq47csp1rbpb.apps.googleusercontent.com"
          data-callback="onCred"
-         data-ux_mode="popup"
-         data-use_fedcm_for_prompt="true"
          data-auto_prompt="false"></div>
     <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-shape="pill"></div>
-    <p class="muted" id="motivo"></p>
+    <div class="sp"></div>
+    <div class="muted">Entre com um e-mail cadastrado na Config para carregar seu estande.</div>
   </div>
 
   <div id="app" class="card" style="display:none">
-    <p>Olá Mundo! 🎉</p>
-    <p>Bem-vindo, <b id="nome"></b> (<span id="email"></span>)</p>
-    <img id="foto" width="64" height="64" alt="" style="display:none">
-    <div class="muted" style="margin-top:8px">Resposta do servidor:</div>
-    <pre id="out"></pre>
-  </div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <img id="foto" width="48" height="48" alt="">
+      <div>
+        <div id="boas"></div>
+        <div class="muted" id="info"></div>
+      </div>
+      <div style="flex:1"></div>
+      <button id="btnPing" type="button">Testar backend (ping)</button>
+    </div>
 
-  <div class="card">
+    <div class="sp"></div><hr/><div class="sp"></div>
+
+    <form id="frm">
+      <div class="row">
+        <div>
+          <label>CPF</label>
+          <input id="cpf" required inputmode="numeric" maxlength="14" placeholder="000.000.000-00">
+        </div>
+        <div>
+          <label>Telefone</label>
+          <input id="tel" required placeholder="(00) 90000-0000" maxlength="16">
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>CEP</label>
+          <input id="cep" required inputmode="numeric" maxlength="9" placeholder="00000-000">
+        </div>
+        <div>
+          <label>Logradouro</label>
+          <input id="logr" required>
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Número</label>
+          <input id="num" required>
+        </div>
+        <div>
+          <label>Complemento</label>
+          <input id="comp">
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Bairro</label>
+          <input id="bairro" required>
+        </div>
+        <div>
+          <label>Cidade</label>
+          <input id="cidade" required>
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>UF</label>
+          <input id="uf" required maxlength="2">
+        </div>
+        <div>
+          <label>Data</label>
+          <input id="data" type="date" required>
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Horário</label>
+          <select id="horario" required></select>
+        </div>
+        <div>
+          <label>Arma</label>
+          <select id="arma" required></select>
+        </div>
+      </div>
+
+      <label>Observações</label>
+      <textarea id="obs" placeholder="Escreva aqui..."></textarea>
+
+      <div class="sp"></div>
+      <button type="submit">Enviar agendamento</button>
+      <span id="msg" class="muted"></span>
+    </form>
+
+    <div class="sp"></div><hr/><div class="sp"></div>
     <div class="muted">Log</div>
     <pre id="log"></pre>
   </div>
+</div>
 
 <script>
-/* URL do seu Apps Script (/exec) */
-/*const GAS_URL = 'https://script.google.com/macros/s/AKfycbwrYWQ3gVE3wSobk3w049hva6R5wmN9WayxuUh9itl1qvOQVaHXF9_JxEmgSQ9YMliy/exec';*/
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbwrYWQ3gVE3wSobk3w049hva6R5wmN9WayxuUh9itl1qvOQVaHXF9_JxEmgSQ9YMliy/exec';
-  
-const $ = (s)=>document.querySelector(s);
-function logLine(...a){ const t=a.map(x=>typeof x==='string'?x:JSON.stringify(x)).join(' '); console.log('[LOG]',...a); const el=$('#log'); el.textContent+=t+'\n'; el.scrollTop=el.scrollHeight; }
-function setStatus(txt, ok){ const el=$('#status'); el.textContent=txt; el.classList.toggle('ok',!!ok); el.classList.toggle('err',ok===false); }
+/*** CONFIG ***/
+const GAS_URL   = 'https://script.google.com/macros/s/AKfycbwrYWQ3gVE3wSobk3w049hva6R5wmN9WayxuUh9itl1qvOQVaHXF9_JxEmgSQ9YMliy/exec'; // sua /exec
+const CLIENT_ID = '826003708445-8612nadjq2l7ahb4ht0bpq47csp1rbpb.apps.googleusercontent.com';
 
-/* JSONP helper 
-function callJSONP(params, timeoutMs=15000){
+/*** JSONP helper ***/
+function callJSONP(params, timeoutMs=20000){
   return new Promise((resolve, reject)=>{
     const cb = 'cb_' + Math.random().toString(36).slice(2);
-    const u  = new URL(GAS_URL);
-    Object.entries(params).forEach(([k,v])=> u.searchParams.set(k,v));
-    u.searchParams.set('callback', cb);
-    u.searchParams.set('t', Date.now());
+    let url = GAS_URL + (GAS_URL.includes('?')?'&':'?') +
+      Object.entries(params).map(([k,v])=>encodeURIComponent(k)+'='+encodeURIComponent(v)).join('&') +
+      '&callback=' + encodeURIComponent(cb) + '&t=' + Date.now();
 
-    const s = document.createElement('script');
-    let done = false;
-    const cleanup = ()=>{ if(window[cb]) delete window[cb]; if(s.parentNode) s.parentNode.removeChild(s); };
-
-    window[cb] = (data)=>{ done = true; cleanup(); resolve(data); };
-    s.onerror = ()=>{ cleanup(); reject(new Error('erro de script JSONP')); };
-    s.src = u.toString();
-    document.body.appendChild(s);
-
-    setTimeout(()=>{ if(!done){ cleanup(); reject(new Error('timeout')); } }, timeoutMs);
-  });
-}
-*/
-function callJSONP(params, timeoutMs=15000){
-  return new Promise((resolve, reject)=>{
-    const cb = 'cb_' + Math.random().toString(36).slice(2);
-
-    // Montagem segura da URL (respeita se GAS_URL já tem querystring)
-    let url = GAS_URL;
-    url += (url.includes('?') ? '&' : '?') +
-           Object.entries(params).map(([k,v]) =>
-             encodeURIComponent(k) + '=' + encodeURIComponent(v)
-           ).join('&');
-    url += '&callback=' + encodeURIComponent(cb) + '&t=' + Date.now();
-
-    // LOG: deixa visível a URL final (útil pra abrir em outra aba se der erro)
-    const logEl = document.querySelector('#log');
-    if (logEl) { logEl.textContent += '\nJSONP URL: ' + url + '\n'; }
+    log('JSONP URL: ' + url);
 
     const s = document.createElement('script');
     s.async = true;
     s.referrerPolicy = 'no-referrer';
-    let done = false;
+    let done=false;
 
-    function cleanup(){ try{ delete window[cb]; }catch{}; if (s.parentNode) s.parentNode.removeChild(s); }
-    window[cb] = (data)=>{ done = true; cleanup(); resolve(data); };
-    s.onerror   = ()=>{ cleanup(); reject(new Error('erro de script JSONP')); };
+    function cleanup(){ try{delete window[cb]}catch{}; s.remove(); }
+    window[cb] = (data)=>{ done=true; cleanup(); resolve(data); };
+    s.onerror = ()=>{ cleanup(); reject(new Error('erro de script JSONP')); };
     s.src = url;
     document.body.appendChild(s);
-
     setTimeout(()=>{ if(!done){ cleanup(); reject(new Error('timeout')); } }, timeoutMs);
   });
 }
 
-/* Diagnóstico do prompt (informativo) */
-window.addEventListener('load', ()=>{
-  $('#btnPing').onclick = async ()=>{
-    try{
-      setStatus('Testando backend…');
-      const r = await callJSONP({ op:'ping' });
-      if (r?.ok) setStatus('Backend OK: ' + new Date(r.ts).toLocaleString(), true);
-      else setStatus('Backend respondeu erro: ' + (r?.error||'?'), false);
-      logLine('ping →', r);
-    }catch(e){
-      setStatus('Backend indisponível: ' + e.message, false);
-      logLine('ping erro:', e.message||e);
-    }
-  };
-  $('#btnPing').click();
+/*** UI helpers ***/
+const $ = sel => document.querySelector(sel);
+function log(t){ const el=$('#log'); el.textContent += (t+'\n'); el.scrollTop = el.scrollHeight; }
+function setMsg(t,ok){ const el=$('#msg'); el.textContent=t||''; el.className = ok?'ok':'err'; }
 
-  if (window.google?.accounts?.id) {
-    google.accounts.id.prompt(n=>{
-      const m=$('#motivo');
-      if (n.isNotDisplayed()) m.textContent='Prompt não exibido: '+n.getNotDisplayedReason();
-      else if (n.isSkippedMoment?.()) m.textContent='Prompt ignorado: '+n.getSkippedReason();
-      else m.textContent='';
-    });
-  }
-});
+/*** Máscaras & validações simples ***/
+function maskCPF(v){ v=v.replace(/\D/g,'').slice(0,11); return v.replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d{1,2})$/,'$1-$2'); }
+function maskTEL(v){ v=v.replace(/\D/g,'').slice(0,11); return v.replace(/^(\d{2})(\d)/,'($1) $2').replace(/(\d{5})(\d{4})$/,'$1-$2'); }
+function maskCEP(v){ v=v.replace(/\D/g,'').slice(0,8); return v.replace(/(\d{5})(\d{1,3})$/,'$1-$2'); }
+function cpfOk(cpf){
+  cpf = (cpf||'').replace(/\D/g,''); if (!cpf||cpf.length!==11||/^(\d)\1+$/.test(cpf)) return false;
+  let s=0; for(let i=0;i<9;i++) s+=parseInt(cpf[i])*(10-i); let d=11-(s%11); if(d>9)d=0; if(d!=cpf[9]) return false;
+  s=0; for(let i=0;i<10;i++) s+=parseInt(cpf[i])*(11-i); d=11-(s%11); if(d>9)d=0; return d==cpf[10];
+}
 
-/* Login → valida no backend por JSONP */
-async function onCred(res){
-  logLine('onCred chamado. cred len =', res?.credential?.length || 0);
-  if (!res?.credential){ alert('credential ausente'); return; }
-
+/*** CEP autofill (ViaCEP) ***/
+async function buscaCEP(cep){
+  cep = (cep||'').replace(/\D/g,'');
+  if (cep.length!==8) return;
   try{
-    setStatus('Validando token no servidor…');
-    const who = await callJSONP({ op:'whoami', idToken: res.credential });
-    logLine('whoami →', who);
-    if (!who?.ok){ setStatus('Falha no login: ' + (who?.error||'?'), false); alert('Falha no login: ' + (who?.error||'?')); return; }
+    const r = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+    const j = await r.json();
+    if (j.erro){ setMsg('CEP não encontrado',false); return; }
+    $('#logr').value   = j.logradouro || '';
+    $('#bairro').value = j.bairro     || '';
+    $('#cidade').value = j.localidade || '';
+    $('#uf').value     = j.uf         || '';
+    setMsg('',true);
+  }catch(e){ setMsg('Erro no ViaCEP',false); }
+}
 
-    $('#login').style.display='none';
+/*** Estado global ***/
+let session = null;
+let profile = null;
+
+/*** Login callback ***/
+async function onCred(res){
+  try{
+    log('onCred chamado. cred len = '+ (res.credential||'').length);
+    const who = await callJSONP({op:'whoami', idToken: res.credential});
+    if (!who.ok){ setMsg('Falha no login: '+(who.error||''), false); return; }
+
+    session = who.session;
+    profile = {email: who.email, name: who.name, picture: who.picture, estande: who.estande, admin: who.admin};
+
+    $('#auth').style.display='none';
     $('#app').style.display='block';
-    $('#nome').textContent  = who.name  || '(sem nome)';
-    $('#email').textContent = who.email || '(sem e-mail)';
-    if (who.picture){ const img=$('#foto'); img.src=who.picture; img.style.display='inline-block'; }
-    $('#out').textContent   = JSON.stringify(who, null, 2);
-    setStatus('Logado com sucesso!', true);
+
+    $('#boas').textContent = `Olá, ${who.name}! 🎉`;
+    $('#info').textContent = `${who.email} — Estande: ${who.estande || '(não mapeado)'}`;
+    $('#foto').src = who.picture || '';
+
+    // carregar listas
+    const lst = await callJSONP({op:'listar', session});
+    if (!lst.ok){ setMsg('Erro ao carregar listas: '+(lst.error||''), false); return; }
+
+    // horários
+    const h = $('#horario'); h.innerHTML=''; (lst.horarios||[]).forEach(x=>{
+      const o=document.createElement('option'); o.value=o.textContent=x; h.appendChild(o);
+    });
+    // armas
+    const a = $('#arma'); a.innerHTML=''; (lst.armas||[]).forEach(x=>{
+      const o=document.createElement('option'); o.value=o.textContent=x; a.appendChild(o);
+    });
+
+    setMsg('',true);
   }catch(e){
-    setStatus('Erro no backend: ' + (e.message||e), false);
-    logLine('whoami erro:', e.message||e);
-    alert('Erro no backend: ' + (e.message||e));
+    setMsg('Erro de autenticação: '+e, false);
   }
 }
+
+/*** Eventos UI ***/
+$('#btnPing').onclick = async ()=>{
+  try{
+    const r = await callJSONP({op:'ping'});
+    setMsg('Backend OK: '+ r.ts, true);
+  }catch(e){ setMsg('Erro no backend: '+e.message, false); }
+};
+
+$('#cep').addEventListener('input', e => e.target.value = maskCEP(e.target.value));
+$('#cep').addEventListener('blur',  e => buscaCEP(e.target.value));
+$('#cpf').addEventListener('input', e => e.target.value = maskCPF(e.target.value));
+$('#tel').addEventListener('input', e => e.target.value = maskTEL(e.target.value));
+
+$('#frm').addEventListener('submit', async (ev)=>{
+  ev.preventDefault();
+  setMsg('Enviando...', true);
+
+  const payload = {
+    op:'submit',
+    session,
+    cpf: $('#cpf').value,
+    telefone: $('#tel').value,
+    cep: $('#cep').value,
+    logradouro: $('#logr').value,
+    numero: $('#num').value,
+    complemento: $('#comp').value,
+    bairro: $('#bairro').value,
+    cidade: $('#cidade').value,
+    uf: $('#uf').value,
+    data: $('#data').value,
+    horario: $('#horario').value,
+    arma: $('#arma').value,
+    obs: $('#obs').value
+  };
+
+  if (!cpfOk(payload.cpf)){ setMsg('CPF inválido', false); return; }
+
+  try{
+    const r = await callJSONP(payload);
+    if (!r.ok){ setMsg('Erro: '+(r.error||'falha'), false); return; }
+    setMsg(r.message || 'Agendado!', true);
+    log(JSON.stringify(r, null, 2));
+    $('#frm').reset();
+  }catch(e){ setMsg('Erro ao enviar: '+e.message, false); }
+});
 </script>
 </body>
 </html>

@@ -255,8 +255,8 @@ async function onCred(res){
 
     session = who.session;
     profile = {email: who.email, name: who.name, picture: who.picture, estande: who.estande, admin: who.admin};
-    await showAdminIfNeeded(who);
 
+    // mostra a UI primeiro
     $('#auth').style.display='none';
     $('#app').style.display='block';
 
@@ -278,6 +278,10 @@ async function onCred(res){
     });
 
     setMsg('',true);
+
+    // carrega painel admin em paralelo (se for admin)
+    showAdminIfNeeded(who);
+
   }catch(e){
     setMsg('Erro de autenticação: '+e, false);
   }
@@ -328,7 +332,8 @@ $('#frm').addEventListener('submit', async (ev)=>{
     $('#frm').reset();
   }catch(e){ setMsg('Erro ao enviar: '+e.message, false); }
 });
-  /* ===== Admin only ===== */
+
+/* ===== Admin only ===== */
 async function adminBoot(){
   const r = await callJSONP({op:'admin_boot', session});
   if (!r.ok) { setMsg('Admin: '+(r.error||'falha'), false); return; }
@@ -424,11 +429,6 @@ async function showAdminIfNeeded(who){
     await adminBoot();
   }
 }
-
-// já existe onCred no seu arquivo – acrescente a chamada:
-/// dentro do try, depois de preencher o app:
-///   await showAdminIfNeeded(who);
-
 </script>
 </body>
 </html>

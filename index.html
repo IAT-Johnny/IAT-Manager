@@ -16,7 +16,7 @@
   </style>
 </head>
 <body>
-  <h1>Teste: Olá Mundo com Login GoogleWow99</h1>
+  <h1>Teste: Olá Mundo com Login GoogleWow81</h1>
 
   <div class="card">
     <button id="btnPing" type="button">Testar backend (ping)</button>
@@ -81,20 +81,28 @@ function callJSONP(params, timeoutMs=15000){
 function callJSONP(params, timeoutMs=15000){
   return new Promise((resolve, reject)=>{
     const cb = 'cb_' + Math.random().toString(36).slice(2);
-    const u  = new URL(GAS_URL);
-    Object.entries(params).forEach(([k,v])=> u.searchParams.set(k,v));
-    u.searchParams.set('callback', cb);
-    u.searchParams.set('t', Date.now()); // cache-buster
+
+    // Montagem segura da URL (respeita se GAS_URL já tem querystring)
+    let url = GAS_URL;
+    url += (url.includes('?') ? '&' : '?') +
+           Object.entries(params).map(([k,v]) =>
+             encodeURIComponent(k) + '=' + encodeURIComponent(v)
+           ).join('&');
+    url += '&callback=' + encodeURIComponent(cb) + '&t=' + Date.now();
+
+    // LOG: deixa visível a URL final (útil pra abrir em outra aba se der erro)
+    const logEl = document.querySelector('#log');
+    if (logEl) { logEl.textContent += '\nJSONP URL: ' + url + '\n'; }
 
     const s = document.createElement('script');
     s.async = true;
-    s.referrerPolicy = 'no-referrer';    // reduz bloqueios no anônimo
+    s.referrerPolicy = 'no-referrer';
     let done = false;
 
-    function cleanup(){ delete window[cb]; s.remove(); }
+    function cleanup(){ try{ delete window[cb]; }catch{}; if (s.parentNode) s.parentNode.removeChild(s); }
     window[cb] = (data)=>{ done = true; cleanup(); resolve(data); };
     s.onerror   = ()=>{ cleanup(); reject(new Error('erro de script JSONP')); };
-    s.src = u.toString();
+    s.src = url;
     document.body.appendChild(s);
 
     setTimeout(()=>{ if(!done){ cleanup(); reject(new Error('timeout')); } }, timeoutMs);

@@ -16,11 +16,10 @@
   </style>
 </head>
 <body>
-  <h1>Teste: Olá Mundo com Login Google161616</h1>
+  <h1>Teste: Olá Mundo com Login Google</h1>
 
   <div class="card">
     <button id="btnPing" type="button">Testar backend (ping)</button>
-    <button id="btnOpen" type="button">Abrir resposta (debug)</button>
     <span id="status" class="muted">Aguardando…</span>
   </div>
 
@@ -49,92 +48,83 @@
   </div>
 
 <script>
-/* 1) coloque aqui a URL /exec DO SEU APP SCRIPT */
+/* URL do seu Apps Script (/exec) */
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbwrYWQ3gVE3wSobk3w049hva6R5wmN9WayxuUh9itl1qvOQVaHXF9_JxEmgSQ9YMliy/exec';
 
 const $ = (s)=>document.querySelector(s);
 function logLine(...a){ const t=a.map(x=>typeof x==='string'?x:JSON.stringify(x)).join(' '); console.log('[LOG]',...a); const el=$('#log'); el.textContent+=t+'\n'; el.scrollTop=el.scrollHeight; }
 function setStatus(txt, ok){ const el=$('#status'); el.textContent=txt; el.classList.toggle('ok',!!ok); el.classList.toggle('err',ok===false); }
 
-/* Aceita qualquer host *.googleusercontent.com ou *.google.com (Apps Script) */
-function isFromGAS(origin){ try{const h=new URL(origin).hostname; return h.endsWith('.googleusercontent.com') || h.endsWith('.google.com');}catch{return false;} }
-
-/* Bridge por GET em iframe — GAS devolve HTML que chama postMessage */
-function getFromGAS(op, data={}, timeoutMs=15000){
+/* JSONP helper */
+function callJSONP(params, timeoutMs=15000){
   return new Promise((resolve, reject)=>{
-    const frame = document.createElement('iframe');
-    frame.style.display='none'; document.body.appendChild(frame);
-    let done=false;
+    const cb = 'cb_' + Math.random().toString(36).slice(2);
+    const u  = new URL(GAS_URL);
+    Object.entries(params).forEach(([k,v])=> u.searchParams.set(k,v));
+    u.searchParams.set('callback', cb);
+    u.searchParams.set('t', Date.now());
 
-    const onMsg = (ev)=>{
-      if (!isFromGAS(ev.origin)) return;
-      window.removeEventListener('message', onMsg);
-      done=true; setTimeout(()=>frame.remove(),0);
-      logLine('postMessage de', ev.origin, 'payload:', ev.data);
-      resolve(ev.data);
-    };
-    window.addEventListener('message', onMsg);
+    const s = document.createElement('script');
+    let done = false;
+    const cleanup = ()=>{ if(window[cb]) delete window[cb]; if(s.parentNode) s.parentNode.removeChild(s); };
 
-    setTimeout(()=>{ if(!done){ window.removeEventListener('message', onMsg); frame.remove(); reject(new Error('timeout aguardando resposta do backend')); }}, timeoutMs);
+    window[cb] = (data)=>{ done = true; cleanup(); resolve(data); };
+    s.onerror = ()=>{ cleanup(); reject(new Error('erro de script JSONP')); };
+    s.src = u.toString();
+    document.body.appendChild(s);
 
-    const params = new URLSearchParams({ op, origin: window.location.origin, bridge:'1', t: Date.now() });
-    for (const [k,v] of Object.entries(data)) params.append(k,v);
-    const url = GAS_URL + '?' + params.toString();
-    logLine('Carregando iframe:', url);
-    frame.src = url;
+    setTimeout(()=>{ if(!done){ cleanup(); reject(new Error('timeout')); } }, timeoutMs);
   });
 }
 
+/* Diagnóstico do prompt (informativo) */
 window.addEventListener('load', ()=>{
   $('#btnPing').onclick = async ()=>{
     try{
       setStatus('Testando backend…');
-      const r = await getFromGAS('ping', {});
-      if (r?.ok) setStatus('Backend OK: '+new Date(r.ts).toLocaleString(), true);
-      else setStatus('Backend respondeu erro: '+(r?.error||'?'), false);
+      const r = await callJSONP({ op:'ping' });
+      if (r?.ok) setStatus('Backend OK: ' + new Date(r.ts).toLocaleString(), true);
+      else setStatus('Backend respondeu erro: ' + (r?.error||'?'), false);
       logLine('ping →', r);
     }catch(e){
-      setStatus('Backend indisponível: '+e.message, false);
+      setStatus('Backend indisponível: ' + e.message, false);
       logLine('ping erro:', e.message||e);
     }
   };
-  $('#btnOpen').onclick = ()=> window.open(GAS_URL + '?op=ping&callback=foo', '_blank'); // JSONP debug
   $('#btnPing').click();
 
-  // Só informativo (por que o prompt não aparece)
   if (window.google?.accounts?.id) {
     google.accounts.id.prompt(n=>{
       const m=$('#motivo');
-      if (n.isNotDisplayed()) m.textContent = 'Prompt não exibido: '+n.getNotDisplayedReason();
-      else if (n.isSkippedMoment?.()) m.textContent = 'Prompt ignorado: '+n.getSkippedReason();
-      else m.textContent = '';
+      if (n.isNotDisplayed()) m.textContent='Prompt não exibido: '+n.getNotDisplayedReason();
+      else if (n.isSkippedMoment?.()) m.textContent='Prompt ignorado: '+n.getSkippedReason();
+      else m.textContent='';
     });
   }
 });
 
-/* Callback do Google — envia token ao backend e mostra dados */
+/* Login → valida no backend por JSONP */
 async function onCred(res){
   logLine('onCred chamado. cred len =', res?.credential?.length || 0);
   if (!res?.credential){ alert('credential ausente'); return; }
 
   try{
     setStatus('Validando token no servidor…');
-    const who = await getFromGAS('whoami', { idToken: res.credential });
+    const who = await callJSONP({ op:'whoami', idToken: res.credential });
     logLine('whoami →', who);
-
-    if (!who?.ok){ setStatus('Falha no login: '+(who?.error||'?'), false); alert('Falha no login: '+(who?.error||'?')); return; }
+    if (!who?.ok){ setStatus('Falha no login: ' + (who?.error||'?'), false); alert('Falha no login: ' + (who?.error||'?')); return; }
 
     $('#login').style.display='none';
     $('#app').style.display='block';
-    $('#nome').textContent = who.name  || '(sem nome)';
-    $('#email').textContent= who.email || '(sem e-mail)';
+    $('#nome').textContent  = who.name  || '(sem nome)';
+    $('#email').textContent = who.email || '(sem e-mail)';
     if (who.picture){ const img=$('#foto'); img.src=who.picture; img.style.display='inline-block'; }
-    $('#out').textContent  = JSON.stringify(who,null,2);
+    $('#out').textContent   = JSON.stringify(who, null, 2);
     setStatus('Logado com sucesso!', true);
   }catch(e){
-    setStatus('Erro no backend: '+(e.message||e), false);
+    setStatus('Erro no backend: ' + (e.message||e), false);
     logLine('whoami erro:', e.message||e);
-    alert('Erro no backend: '+(e.message||e));
+    alert('Erro no backend: ' + (e.message||e));
   }
 }
 </script>

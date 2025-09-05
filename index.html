@@ -22,6 +22,10 @@
     img{border-radius:50%}
     .sp{height:10px}
     pre{white-space:pre-wrap;background:#0f1115;color:#dfe1e5;padding:10px;border-radius:10px;font-size:12px}
+    .chip{display:inline-flex;gap:6px;align-items:center;background:#eef2ff;border-radius:999px;padding:6px 10px;margin:6px 6px 0 0}
+    .chip button{border:0;background:transparent;cursor:pointer}
+    #cfgList div{display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid #eee}
+    #cfgList small{color:#666}
   </style>
 </head>
 <body>
@@ -48,7 +52,53 @@
       <div style="flex:1"></div>
       <button id="btnPing" type="button">Testar backend (ping)</button>
     </div>
-
+    
+    <!-- PAINEL ADMIN (mostra só para admin) -->
+    <div id="admin" class="card" style="display:none">
+      <h3>Painel Admin</h3>
+    
+      <div class="row">
+        <div>
+          <h4>Usuários ↔ Estande</h4>
+          <form id="cfgForm">
+            <label>Email</label><input id="cfgEmail" type="email" required>
+            <label>Estande</label><input id="cfgEstande" required>
+            <label>Admin?</label>
+            <select id="cfgAdmin"><option value="FALSE">FALSE</option><option value="TRUE">TRUE</option></select>
+            <label>Calendar ID (opcional)</label><input id="cfgCal">
+            <div class="sp"></div>
+            <button type="submit">Adicionar/Atualizar</button>
+          </form>
+          <div class="sp"></div>
+          <div class="muted">Usuários cadastrados</div>
+          <div id="cfgList"></div>
+        </div>
+    
+        <div>
+          <h4>Armas & Horários por Estande</h4>
+          <label>Estande</label>
+          <select id="admEst"></select>
+          <div class="sp"></div>
+    
+          <div><b>Armas</b></div>
+          <div id="armaList"></div>
+          <div class="row">
+            <input id="armaNew" placeholder="ex.: Glock 19">
+            <button id="armaAdd" type="button">Adicionar arma</button>
+          </div>
+    
+          <div class="sp"></div>
+    
+          <div><b>Horários</b></div>
+          <div id="horList"></div>
+          <div class="row">
+            <input id="horNew" placeholder="ex.: 09:30">
+            <button id="horAdd" type="button">Adicionar horário</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
     <div class="sp"></div><hr/><div class="sp"></div>
 
     <form id="frm">
@@ -205,6 +255,7 @@ async function onCred(res){
 
     session = who.session;
     profile = {email: who.email, name: who.name, picture: who.picture, estande: who.estande, admin: who.admin};
+    await showAdminIfNeeded(who);
 
     $('#auth').style.display='none';
     $('#app').style.display='block';
@@ -277,6 +328,107 @@ $('#frm').addEventListener('submit', async (ev)=>{
     $('#frm').reset();
   }catch(e){ setMsg('Erro ao enviar: '+e.message, false); }
 });
+  /* ===== Admin only ===== */
+async function adminBoot(){
+  const r = await callJSONP({op:'admin_boot', session});
+  if (!r.ok) { setMsg('Admin: '+(r.error||'falha'), false); return; }
+
+  // lista usuários
+  const UL = $('#cfgList'); UL.innerHTML='';
+  r.configs.forEach(c=>{
+    const row = document.createElement('div');
+    row.innerHTML = `
+      <b>${c.email}</b> <small>→ ${c.estande}</small>
+      <small>${c.admin?'[ADMIN]':''}</small>
+      <small>${c.calendarId||''}</small>
+      <div style="flex:1"></div>
+      <button data-email="${c.email}">Excluir</button>`;
+    row.querySelector('button').onclick = async ev=>{
+      if (!confirm('Excluir '+c.email+'?')) return;
+      const out = await callJSONP({op:'admin_cfg_delete', session, email:c.email});
+      if (out.ok) adminBoot(); else alert(out.error||'falha');
+    };
+    UL.appendChild(row);
+  });
+
+  // popula estandes no select
+  const S = $('#admEst'); S.innerHTML='';
+  (r.estandes||[]).forEach(e=>{
+    const o=document.createElement('option'); o.value=o.textContent=e; S.appendChild(o);
+  });
+  if (S.options.length){ await adminLoadDetails(S.value); }
+}
+
+async function adminLoadDetails(est){
+  const r = await callJSONP({op:'admin_details', session, estande: est});
+  if (!r.ok){ setMsg('Admin details: '+(r.error||'falha'), false); return; }
+
+  // armas
+  const AL = $('#armaList'); AL.innerHTML='';
+  (r.armas||[]).forEach(a=>{
+    const chip = document.createElement('span');
+    chip.className='chip';
+    chip.innerHTML = `${a} <button title="remover">✕</button>`;
+    chip.querySelector('button').onclick = async ()=>{
+      const out = await callJSONP({op:'admin_arma_del', session, estande: est, arma:a});
+      if (out.ok) adminLoadDetails(est); else alert(out.error||'falha');
+    };
+    AL.appendChild(chip);
+  });
+
+  // horários
+  const HL = $('#horList'); HL.innerHTML='';
+  (r.horarios||[]).forEach(h=>{
+    const chip = document.createElement('span');
+    chip.className='chip';
+    chip.innerHTML = `${h} <button title="remover">✕</button>`;
+    chip.querySelector('button').onclick = async ()=>{
+      const out = await callJSONP({op:'admin_hor_del', session, estande: est, horario:h});
+      if (out.ok) adminLoadDetails(est); else alert(out.error||'falha');
+    };
+    HL.appendChild(chip);
+  });
+}
+
+/* eventos admin */
+$('#cfgForm').addEventListener('submit', async ev=>{
+  ev.preventDefault();
+  const email = $('#cfgEmail').value.trim();
+  const est   = $('#cfgEstande').value.trim();
+  const adm   = $('#cfgAdmin').value;
+  const cal   = $('#cfgCal').value.trim();
+  if (!email || !est){ alert('Preencha email e estande'); return; }
+  const r = await callJSONP({op:'admin_cfg_upsert', session, email, estande:est, admin:adm, calendarId:cal});
+  if (r.ok){ setMsg('Config salva', true); adminBoot(); } else alert(r.error||'falha');
+});
+
+$('#admEst').addEventListener('change', ev=> adminLoadDetails(ev.target.value));
+
+$('#armaAdd').onclick = async ()=>{
+  const est = $('#admEst').value, arma = $('#armaNew').value.trim();
+  if (!est || !arma) return;
+  const r = await callJSONP({op:'admin_arma_add', session, estande:est, arma});
+  if (r.ok){ $('#armaNew').value=''; adminLoadDetails(est); } else alert(r.error||'falha');
+};
+$('#horAdd').onclick = async ()=>{
+  const est = $('#admEst').value, h = $('#horNew').value.trim();
+  if (!est || !h) return;
+  const r = await callJSONP({op:'admin_hor_add', session, estande:est, horario:h});
+  if (r.ok){ $('#horNew').value=''; adminLoadDetails(est); } else alert(r.error||'falha');
+};
+
+/* ligar o admin quando logar */
+async function showAdminIfNeeded(who){
+  if (who.admin){
+    $('#admin').style.display='block';
+    await adminBoot();
+  }
+}
+
+// já existe onCred no seu arquivo – acrescente a chamada:
+/// dentro do try, depois de preencher o app:
+///   await showAdminIfNeeded(who);
+
 </script>
 </body>
 </html>

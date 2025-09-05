@@ -16,7 +16,7 @@
   </style>
 </head>
 <body>
-  <h1>Teste: Olá Mundo com Login GoogleWow81</h1>
+  <h1>Teste: Olá Mundo com Login Google</h1>
 
   <div class="card">
     <button id="btnPing" type="button">Testar backend (ping)</button>
@@ -50,7 +50,7 @@
 <script>
 /* URL do seu Apps Script (/exec) */
 /*const GAS_URL = 'https://script.google.com/macros/s/AKfycbwrYWQ3gVE3wSobk3w049hva6R5wmN9WayxuUh9itl1qvOQVaHXF9_JxEmgSQ9YMliy/exec';*/
-const GAS_URL = 'https://script.googleusercontent.com/macros/echo?user_content_key=AehSKLh3vq1oK9dEHdZbGpIpc2UOxYwXDz3qce9zEvNBbNozmDcG3irIdYzxIKqgtCm6jeaqigcjgmKb6jSEJtyFjNWig9zJrgiUYi7Kq9S3D49xAc2KzWpLjwNHtg57t-Z0jQ4SDE2_Ql0Ufz4Cb_bJL_-fkFUSYQzNFlbYs3MXWODuiTpiXX2EIMS6TmOm3hn8t1Q0wCxb2fK-6LoKHOZTMfrXgHvZx1sMCFPbs55q2_sZd8eJkqQNRcvTc4_1Wd_5rxXdRIj4OCPu-r8lvm0_W9dsujcaPQwHscxsicfdMtLSrc5X_owms2HSp_OWPA&lib=M5xFZN7J2TcPm3jF7kvsTd5Hr2decGxRj';
+const GAS_URL = 'https://script.googleusercontent.com/macros/echo?user_content_key=AehSKLji5MBT5fXsqiZnMc_AOTk4Y7prhuuL7HzmqSiiaBt7fd2UnWW51qVnFUNHDNHVMNC3AnlazkU0HCbm7HhHvdWrtYOvJHth4qy5YHAMwDazCmoyABWsb7zQXH-OGjCToG1TBfQ9tYXxR7sQAUiIh7AldU0Fl6PFu5DWdCNBHWkfSbRpqaFlpZ1w_S-nd0GlWgir6JnQQicJuuguNQDp47vJH6Ox_58rRW7T5Npn_yCDvFxBdIRk76aNUqMIeJWV_CviwsUDkV6c9fqnAwT5e355KMJylg&lib=M5xFZN7J2TcPm3jF7kvsTd5Hr2decGxRj';
   
 const $ = (s)=>document.querySelector(s);
 function logLine(...a){ const t=a.map(x=>typeof x==='string'?x:JSON.stringify(x)).join(' '); console.log('[LOG]',...a); const el=$('#log'); el.textContent+=t+'\n'; el.scrollTop=el.scrollHeight; }

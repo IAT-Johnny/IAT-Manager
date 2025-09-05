@@ -16,7 +16,7 @@
   </style>
 </head>
 <body>
-  <h1>Teste: Olá Mundo com Login GoogleWooW</h1>
+  <h1>Teste: Olá Mundo com Login GoogleWowo</h1>
 
   <div class="card">
     <button id="btnPing" type="button">Testar backend (ping)</button>
@@ -49,8 +49,8 @@
 
 <script>
 /* URL do seu Apps Script (/exec) */
-/*const GAS_URL = 'https://script.google.com/macros/s/AKfycbwrYWQ3gVE3wSobk3w049hva6R5wmN9WayxuUh9itl1qvOQVaHXF9_JxEmgSQ9YMliy/exec';*/
-const GAS_URL = 'https://script.googleusercontent.com/macros/echo?user_content_key=SEU_KEY&lib=SUA_LIB';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwrYWQ3gVE3wSobk3w049hva6R5wmN9WayxuUh9itl1qvOQVaHXF9_JxEmgSQ9YMliy/exec';
+/*const GAS_URL = 'https://script.googleusercontent.com/macros/echo?user_content_key=SEU_KEY&lib=SUA_LIB';*/
   
 const $ = (s)=>document.querySelector(s);
 function logLine(...a){ const t=a.map(x=>typeof x==='string'?x:JSON.stringify(x)).join(' '); console.log('[LOG]',...a); const el=$('#log'); el.textContent+=t+'\n'; el.scrollTop=el.scrollHeight; }

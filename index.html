@@ -2,20 +2,27 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
-  <title>Login Google – Teste</title>
+  <title>Teste: Olá Mundo com Login Google</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
-    body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;max-width:720px;margin:40px auto;padding:0 16px}
-    .card{background:#f7f7f8;border-radius:12px;padding:18px}
-    .muted{opacity:.85}
+    body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;max-width:860px;margin:40px auto;padding:0 16px}
+    .card{background:#f7f7f8;border-radius:12px;padding:18px;margin-top:12px}
+    .muted{opacity:.75}
+    pre{white-space:pre-wrap;background:#111;color:#eee;padding:12px;border-radius:8px;max-height:260px;overflow:auto}
     img{border-radius:50%}
-    pre{white-space:pre-wrap;background:#111;color:#eee;padding:12px;border-radius:8px}
     button{padding:10px 14px;border:0;border-radius:10px;background:#1a73e8;color:#fff;cursor:pointer}
+    #status.ok{color:green} #status.err{color:#b91c1c}
   </style>
 </head>
 <body>
-  <h1>Teste: Olá Mundo com Login Google2025ooo</h1>
+  <h1>Teste: Olá Mundo com Login Google161616</h1>
+
+  <div class="card">
+    <button id="btnPing" type="button">Testar backend (ping)</button>
+    <button id="btnOpen" type="button">Abrir resposta (debug)</button>
+    <span id="status" class="muted">Aguardando…</span>
+  </div>
 
   <div id="login" class="card">
     <div id="g_id_onload"
@@ -32,48 +39,103 @@
     <p>Olá Mundo! 🎉</p>
     <p>Bem-vindo, <b id="nome"></b> (<span id="email"></span>)</p>
     <img id="foto" width="64" height="64" alt="" style="display:none">
-    <div class="muted" style="margin-top:8px">Dados recebidos:</div>
+    <div class="muted" style="margin-top:8px">Resposta do servidor:</div>
     <pre id="out"></pre>
-    <button onclick="voltar()">Sair</button>
+  </div>
+
+  <div class="card">
+    <div class="muted">Log</div>
+    <pre id="log"></pre>
   </div>
 
 <script>
-function mostrar(user){
-  document.getElementById('login').style.display = 'none';
-  document.getElementById('app').style.display   = 'block';
-  document.getElementById('nome').textContent    = user.name  || '(sem nome)';
-  document.getElementById('email').textContent   = user.email || '(sem e-mail)';
-  if (user.picture) {
-    document.getElementById('foto').src = user.picture;
-    document.getElementById('foto').style.display = 'inline-block';
-  }
-  document.getElementById('out').textContent = JSON.stringify(user, null, 2);
+/* 1) coloque aqui a URL /exec DO SEU APP SCRIPT */
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwrYWQ3gVE3wSobk3w049hva6R5wmN9WayxuUh9itl1qvOQVaHXF9_JxEmgSQ9YMliy/exec';
+
+const $ = (s)=>document.querySelector(s);
+function logLine(...a){ const t=a.map(x=>typeof x==='string'?x:JSON.stringify(x)).join(' '); console.log('[LOG]',...a); const el=$('#log'); el.textContent+=t+'\n'; el.scrollTop=el.scrollHeight; }
+function setStatus(txt, ok){ const el=$('#status'); el.textContent=txt; el.classList.toggle('ok',!!ok); el.classList.toggle('err',ok===false); }
+
+/* Aceita qualquer host *.googleusercontent.com ou *.google.com (Apps Script) */
+function isFromGAS(origin){ try{const h=new URL(origin).hostname; return h.endsWith('.googleusercontent.com') || h.endsWith('.google.com');}catch{return false;} }
+
+/* Bridge por GET em iframe — GAS devolve HTML que chama postMessage */
+function getFromGAS(op, data={}, timeoutMs=15000){
+  return new Promise((resolve, reject)=>{
+    const frame = document.createElement('iframe');
+    frame.style.display='none'; document.body.appendChild(frame);
+    let done=false;
+
+    const onMsg = (ev)=>{
+      if (!isFromGAS(ev.origin)) return;
+      window.removeEventListener('message', onMsg);
+      done=true; setTimeout(()=>frame.remove(),0);
+      logLine('postMessage de', ev.origin, 'payload:', ev.data);
+      resolve(ev.data);
+    };
+    window.addEventListener('message', onMsg);
+
+    setTimeout(()=>{ if(!done){ window.removeEventListener('message', onMsg); frame.remove(); reject(new Error('timeout aguardando resposta do backend')); }}, timeoutMs);
+
+    const params = new URLSearchParams({ op, origin: window.location.origin, bridge:'1', t: Date.now() });
+    for (const [k,v] of Object.entries(data)) params.append(k,v);
+    const url = GAS_URL + '?' + params.toString();
+    logLine('Carregando iframe:', url);
+    frame.src = url;
+  });
 }
 
-function voltar(){
-  document.getElementById('app').style.display = 'none';
-  document.getElementById('login').style.display = 'block';
-}
+window.addEventListener('load', ()=>{
+  $('#btnPing').onclick = async ()=>{
+    try{
+      setStatus('Testando backend…');
+      const r = await getFromGAS('ping', {});
+      if (r?.ok) setStatus('Backend OK: '+new Date(r.ts).toLocaleString(), true);
+      else setStatus('Backend respondeu erro: '+(r?.error||'?'), false);
+      logLine('ping →', r);
+    }catch(e){
+      setStatus('Backend indisponível: '+e.message, false);
+      logLine('ping erro:', e.message||e);
+    }
+  };
+  $('#btnOpen').onclick = ()=> window.open(GAS_URL + '?op=ping&callback=foo', '_blank'); // JSONP debug
+  $('#btnPing').click();
 
-// Diagnóstico do prompt (opcional)
-window.addEventListener('load', () => {
+  // Só informativo (por que o prompt não aparece)
   if (window.google?.accounts?.id) {
-    google.accounts.id.prompt(n => {
-      const m = document.getElementById('motivo');
-      if (n.isNotDisplayed()) m.textContent = 'Prompt não exibido: ' + n.getNotDisplayedReason();
-      else if (n.isSkippedMoment?.()) m.textContent = 'Prompt ignorado: ' + n.getSkippedReason();
+    google.accounts.id.prompt(n=>{
+      const m=$('#motivo');
+      if (n.isNotDisplayed()) m.textContent = 'Prompt não exibido: '+n.getNotDisplayedReason();
+      else if (n.isSkippedMoment?.()) m.textContent = 'Prompt ignorado: '+n.getSkippedReason();
       else m.textContent = '';
     });
   }
 });
 
-// Callback do Google → chama o Apps Script pelo canal nativo (sem CORS)
-function onCred(res){
-  if (!res?.credential) return alert('Não foi possível obter o credential.');
-  google.script.run.withSuccessHandler(function(r){
-    if (!r?.ok) return alert('Falha no login: ' + (r?.error || 'desconhecido'));
-    mostrar(r);
-  }).verify(res.credential);
+/* Callback do Google — envia token ao backend e mostra dados */
+async function onCred(res){
+  logLine('onCred chamado. cred len =', res?.credential?.length || 0);
+  if (!res?.credential){ alert('credential ausente'); return; }
+
+  try{
+    setStatus('Validando token no servidor…');
+    const who = await getFromGAS('whoami', { idToken: res.credential });
+    logLine('whoami →', who);
+
+    if (!who?.ok){ setStatus('Falha no login: '+(who?.error||'?'), false); alert('Falha no login: '+(who?.error||'?')); return; }
+
+    $('#login').style.display='none';
+    $('#app').style.display='block';
+    $('#nome').textContent = who.name  || '(sem nome)';
+    $('#email').textContent= who.email || '(sem e-mail)';
+    if (who.picture){ const img=$('#foto'); img.src=who.picture; img.style.display='inline-block'; }
+    $('#out').textContent  = JSON.stringify(who,null,2);
+    setStatus('Logado com sucesso!', true);
+  }catch(e){
+    setStatus('Erro no backend: '+(e.message||e), false);
+    logLine('whoami erro:', e.message||e);
+    alert('Erro no backend: '+(e.message||e));
+  }
 }
 </script>
 </body>

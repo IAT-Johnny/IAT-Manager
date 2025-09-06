@@ -361,7 +361,7 @@ async function onCred(res){
     $('#boas').textContent = 'Olá, ' + (who.name||'') + '! 🎉';
     $('#info').textContent = who.email + ' — Perfil: ' + (who.admin?'Admin/Instrutor':'Usuário');
     $('#foto').src = who.picture || '';
-    $('#nome').value = who.name || '';
+    $('#nome').value = '';
 
     // carregar listas iniciais
     var lst = await callJSONP({op:'listar', session: session});
@@ -393,6 +393,8 @@ async function onCred(res){
 
     // espécies + (se admin) selects de armas por espécie
     renderEspecies(lst, !!who.admin);
+
+    await showAdminIfNeeded(who);
 
     setMsg('',true);
   }catch(e){

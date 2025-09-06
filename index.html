@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
-    :root{--bg:#f6f7fb;--card:#fff;--fg:#111;--muted:#666;--pri:#1a73e8;}
+    :root{--bg:#f6f7fb;--card:#fff;--fg:#111;--muted:#666;--pri:#1a73e8}
     body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--fg);margin:0}
     .wrap{max-width:980px;margin:32px auto;padding:0 16px}
     .card{background:var(--card);border-radius:16px;padding:16px 18px;box-shadow:0 12px 32px rgba(20,20,20,.06)}
@@ -23,15 +23,16 @@
     .sp{height:10px}
     pre{white-space:pre-wrap;background:#0f1115;color:#dfe1e5;padding:10px;border-radius:10px;font-size:12px}
     .chip{display:inline-flex;gap:6px;align-items:center;background:#eef2ff;border-radius:999px;padding:6px 10px;margin:6px 6px 0 0}
-    .chip button{border:0;background:transparent;cursor:pointer}
-    #cfgList div{display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid #eee}
-    #cfgList small{color:#666}
+    #admin{border:1px dashed #cbd5e1;background:#fbfdff}
+    .inline{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .pill{display:inline-flex;align-items:center;gap:8px;border:1px solid #d9dbe0;border-radius:999px;padding:6px 10px;margin:6px 6px 0 0}
   </style>
 </head>
 <body>
 <div class="wrap">
   <h1>Agendamento de Prova</h1>
 
+  <!-- LOGIN -->
   <div id="auth" class="card">
     <div id="g_id_onload"
          data-client_id="826003708445-8612nadjq2l7ahb4ht0bpq47csp1rbpb.apps.googleusercontent.com"
@@ -42,8 +43,9 @@
     <div class="muted">Entre com um e-mail cadastrado na Config.</div>
   </div>
 
+  <!-- APP -->
   <div id="app" class="card" style="display:none">
-    <div style="display:flex;align-items:center;gap:12px">
+    <div class="inline">
       <img id="foto" width="48" height="48" alt="">
       <div>
         <div id="boas"></div>
@@ -53,83 +55,88 @@
       <button id="btnPing" type="button">Testar backend (ping)</button>
     </div>
 
+    <!-- Estabelecimento / Estande -->
     <div class="sp"></div>
-
-    <!-- Estande (admin pode trocar) -->
-    <div class="row">
-      <div>
-        <label>Estande</label>
-        <select id="estandeSel" style="display:none"></select>
-        <div id="estandeText" class="muted"></div>
-      </div>
-      <div></div>
+    <div id="estBox" class="inline">
+      <label style="margin:0">Estande:</label>
+      <!-- Para não-admin ficará somente texto; para admin vira input editável -->
+      <input id="estSel" placeholder="Estande" style="max-width:280px;display:none">
+      <span id="estTxt" class="pill"></span>
     </div>
 
-    <!-- PAINEL ADMIN (mostra só para admin) -->
-    <div id="admin" class="card" style="display:none">
+    <!-- PAINEL ADMIN (autorizações) -->
+    <div id="admin" class="card" style="display:none;margin-top:14px">
       <h3>Painel Admin</h3>
 
+      <h4>Disponibilidade (pontual)</h4>
       <div class="row">
         <div>
-          <h4>Usuários ↔ Estande</h4>
-          <form id="cfgForm">
-            <label>Email</label><input id="cfgEmail" type="email" required>
-            <label>Estande</label><input id="cfgEstande" required>
-            <label>Admin?</label>
-            <select id="cfgAdmin"><option value="FALSE">FALSE</option><option value="TRUE">TRUE</option></select>
-            <label>Calendar ID (opcional)</label><input id="cfgCal">
-            <div class="sp"></div>
-            <button type="submit">Adicionar/Atualizar</button>
-          </form>
-          <div class="sp"></div>
-          <div class="muted">Usuários cadastrados</div>
-          <div id="cfgList"></div>
+          <label>Estande</label><input id="adEst" placeholder="ex.: WestGun">
+          <label>Data</label><input id="adData" type="date">
         </div>
-
         <div>
-          <h4>Armas & Horários por Estande</h4>
-          <label>Estande</label>
-          <select id="admEst"></select>
-          <div class="sp"></div>
-
-          <div><b>Armas</b></div>
-          <div id="armaList"></div>
-          <div class="row">
-            <input id="armaNew" placeholder="ex.: Glock 19">
-            <button id="armaAdd" type="button">Adicionar arma</button>
-          </div>
-
-          <div class="sp"></div>
-
-          <div><b>Horários</b></div>
-          <div id="horList"></div>
-          <div class="row">
-            <input id="horNew" placeholder="ex.: 09:30">
-            <button id="horAdd" type="button">Adicionar horário</button>
-          </div>
+          <label>Horário (HH:mm)</label><input id="adHora" placeholder="18:30">
+          <label>Somente para este e-mail (opcional)</label><input id="adUser" placeholder="usuario@dominio.com">
         </div>
+      </div>
+      <div class="sp"></div>
+      <div class="inline">
+        <button id="btnAddDisp" type="button">Autorizar</button>
+      </div>
+
+      <div class="sp"></div><hr/><div class="sp"></div>
+
+      <h4>Regra recorrente (ex.: TER 18:30)</h4>
+      <div class="row-3">
+        <div>
+          <label>Alvo</label>
+          <select id="rgTarget">
+            <option value="all">Todos</option>
+            <option value="user">Usuário</option>
+            <option value="estande">Estande</option>
+          </select>
+          <label>Valor (e-mail ou estande)</label><input id="rgValue" placeholder="multi3@gmail.com ou WestGun">
+        </div>
+        <div>
+          <label>Dia da semana</label>
+          <select id="rgWeekday">
+            <option value="SEG">Segunda</option><option value="TER">Terça</option>
+            <option value="QUA">Quarta</option><option value="QUI">Quinta</option>
+            <option value="SEX">Sexta</option><option value="SAB">Sábado</option>
+            <option value="DOM">Domingo</option>
+          </select>
+          <label>Horário (HH:mm)</label><input id="rgHora" placeholder="18:30">
+        </div>
+        <div>
+          <label>Início (opcional)</label><input id="rgIni" type="date">
+          <label>Fim (opcional)</label><input id="rgFim" type="date">
+        </div>
+      </div>
+      <div class="sp"></div>
+      <div class="inline">
+        <button id="btnAddRegra" type="button">Adicionar regra</button>
       </div>
     </div>
 
     <div class="sp"></div><hr/><div class="sp"></div>
 
-    <!-- FORMULÁRIO AGENDAMENTO -->
+    <!-- FORMULÁRIO DE AGENDAMENTO -->
     <form id="frm">
       <div class="row">
         <div>
           <label>Nome do atirador</label>
-          <input id="nome" placeholder="Nome completo" required>
+          <input id="nome" required>
         </div>
         <div>
-          <label>Telefone</label>
-          <input id="tel" required placeholder="(00) 90000-0000" maxlength="16">
+          <label>CPF</label>
+          <input id="cpf" required inputmode="numeric" maxlength="14" placeholder="000.000.000-00">
         </div>
       </div>
 
       <div class="row">
         <div>
-          <label>CPF</label>
-          <input id="cpf" required inputmode="numeric" maxlength="14" placeholder="000.000.000-00">
+          <label>Telefone</label>
+          <input id="tel" required placeholder="(00) 90000-0000" maxlength="16">
         </div>
         <div>
           <label>CEP</label>
@@ -172,21 +179,27 @@
 
       <div class="row">
         <div>
-          <label>Data disponível</label>
-          <select id="dataSel" required></select>
+          <label>Data</label>
+          <input id="data" type="date" required>
         </div>
         <div>
-          <label>Horário disponível</label>
+          <label>Horário</label>
           <select id="horario" required></select>
+          <small class="muted" id="slotsHint"></small>
         </div>
       </div>
 
-      <label>Espécie(s) da arma</label>
-      <div id="espList" class="card" style="padding:10px"></div>
+      <!-- ESPÉCIES (sempre visível) -->
+      <div>
+        <label>Espécie(s) de arma</label>
+        <div id="espList" class="inline"></div>
+        <small class="muted">Se nenhuma arma for digitada abaixo, usaremos a arma padrão de cada espécie selecionada.</small>
+      </div>
 
-      <div id="armaAdminBox" class="card" style="display:none; padding:10px; margin-top:10px">
-        <b>Escolher arma por espécie (admin)</b>
-        <div id="armaPorEspecie"></div>
+      <!-- Opcional: admin pode escrever armas específicas -->
+      <div id="armasAdminBox" style="display:none">
+        <label>Armas (opcional, admin pode sobrescrever)</label>
+        <input id="armasTxt" placeholder="ex.: TS9; G25; RT889">
       </div>
 
       <label>Observações</label>
@@ -205,196 +218,110 @@
 
 <script>
 /*** CONFIG ***/
-var GAS_URL   = 'https://script.google.com/macros/s/AKfycbwrYWQ3gVE3wSobk3w049hva6R5wmN9WayxuUh9itl1qvOQVaHXF9_JxEmgSQ9YMliy/exec'; // sua /exec
-var CLIENT_ID = '826003708445-8612nadjq2l7ahb4ht0bpq47csp1rbpb.apps.googleusercontent.com';
+const GAS_URL   = 'https://script.google.com/macros/s/AKfycbwrYWQ3gVE3wSobk3w049hva6R5wmN9WayxuUh9itl1qvOQVaHXF9_JxEmgSQ9YMliy/exec';
+const CLIENT_ID = '826003708445-8612nadjq2l7ahb4ht0bpq47csp1rbpb.apps.googleusercontent.com';
 
 /*** JSONP helper ***/
-function callJSONP(params, timeoutMs){
-  timeoutMs = timeoutMs || 20000;
-  return new Promise(function(resolve, reject){
-    var cb = 'cb_' + Math.random().toString(36).slice(2);
-    var url = GAS_URL + (GAS_URL.indexOf('?')>=0?'&':'?') +
-      Object.keys(params).map(function(k){return encodeURIComponent(k)+'='+encodeURIComponent(params[k]);}).join('&') +
+function callJSONP(params, timeoutMs=20000){
+  return new Promise((resolve, reject)=>{
+    const cb = 'cb_' + Math.random().toString(36).slice(2);
+    const url = GAS_URL + (GAS_URL.includes('?')?'&':'?') +
+      Object.entries(params).map(([k,v])=>encodeURIComponent(k)+'='+encodeURIComponent(v)).join('&') +
       '&callback=' + encodeURIComponent(cb) + '&t=' + Date.now();
-
     log('JSONP URL: ' + url);
-
-    var s = document.createElement('script');
-    s.async = true;
-    s.referrerPolicy = 'no-referrer';
-    var done=false;
-
-    function cleanup(){ try{delete window[cb]}catch(e){}; if (s && s.parentNode) s.parentNode.removeChild(s); }
-    window[cb] = function(data){ done=true; cleanup(); resolve(data); };
-    s.onerror = function(){ cleanup(); reject(new Error('erro de script JSONP')); };
-    s.src = url;
-    document.body.appendChild(s);
-    setTimeout(function(){ if(!done){ cleanup(); reject(new Error('timeout')); } }, timeoutMs);
+    const s = document.createElement('script'); s.async = true; s.referrerPolicy='no-referrer';
+    let done=false;
+    function cleanup(){ try{delete window[cb]}catch{}; s.remove(); }
+    window[cb] = (data)=>{ done=true; cleanup(); resolve(data); };
+    s.onerror = ()=>{ cleanup(); reject(new Error('erro de script JSONP')); };
+    s.src = url; document.body.appendChild(s);
+    setTimeout(()=>{ if(!done){ cleanup(); reject(new Error('timeout')); } }, timeoutMs);
   });
 }
 
 /*** UI helpers ***/
-function $(sel){ return document.querySelector(sel); }
-function log(t){ var el=$('#log'); el.textContent += (t+'\n'); el.scrollTop = el.scrollHeight; }
-function setMsg(t,ok){ var el=$('#msg'); el.textContent=t||''; el.className = ok?'ok':'err'; }
+const $ = sel => document.querySelector(sel);
+function log(t){ const el=$('#log'); el.textContent += (t+'\n'); el.scrollTop = el.scrollHeight; }
+function setMsg(t,ok){ const el=$('#msg'); el.textContent=t||''; el.className = ok?'ok':'err'; }
 
-/*** Máscaras & validações simples ***/
-function maskCPF(v){ v=String(v||'').replace(/\D/g,'').slice(0,11); return v.replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d{1,2})$/,'$1-$2'); }
-function maskTEL(v){ v=String(v||'').replace(/\D/g,'').slice(0,11); return v.replace(/^(\d{2})(\d)/,'($1) $2').replace(/(\d{5})(\d{4})$/,'$1-$2'); }
-function maskCEP(v){ v=String(v||'').replace(/\D/g,'').slice(0,8); return v.replace(/(\d{5})(\d{1,3})$/,'$1-$2'); }
+/*** Máscaras & CEP ***/
+function maskCPF(v){ v=v.replace(/\D/g,'').slice(0,11); return v.replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d{1,2})$/,'$1-$2'); }
+function maskTEL(v){ v=v.replace(/\D/g,'').slice(0,11); return v.replace(/^(\d{2})(\d)/,'($1) $2').replace(/(\d{5})(\d{4})$/,'$1-$2'); }
+function maskCEP(v){ v=v.replace(/\D/g,'').slice(0,8); return v.replace(/(\d{5})(\d{1,3})$/,'$1-$2'); }
 function cpfOk(cpf){
-  cpf = String(cpf||'').replace(/\D/g,''); if (!cpf||cpf.length!==11||/^(\d)\1+$/.test(cpf)) return false;
-  var s=0; for(var i=0;i<9;i++) s+=parseInt(cpf[i],10)*(10-i); var d=11-(s%11); if(d>9)d=0; if(d!=cpf[9]) return false;
-  s=0; for(i=0;i<10;i++) s+=parseInt(cpf[i],10)*(11-i); d=11-(s%11); if(d>9)d=0; return d==cpf[10];
+  cpf = (cpf||'').replace(/\D/g,''); if (!cpf||cpf.length!==11||/^(\d)\1+$/.test(cpf)) return false;
+  let s=0; for(let i=0;i<9;i++) s+=parseInt(cpf[i])*(10-i); let d=11-(s%11); if(d>9)d=0; if(d!=cpf[9]) return false;
+  s=0; for(let i=0;i<10;i++) s+=parseInt(cpf[i])*(11-i); d=11-(s%11); if(d>9)d=0; return d==cpf[10];
 }
-
-/*** CEP autofill (ViaCEP) ***/
-function buscaCEP(cep){
-  cep = String(cep||'').replace(/\D/g,'');
+async function buscaCEP(cep){
+  cep = (cep||'').replace(/\D/g,'');
   if (cep.length!==8) return;
-  fetch('https://viacep.com.br/ws/'+cep+'/json/').then(function(r){return r.json();}).then(function(j){
+  try{
+    const r = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+    const j = await r.json();
     if (j.erro){ setMsg('CEP não encontrado',false); return; }
     $('#logr').value   = j.logradouro || '';
     $('#bairro').value = j.bairro     || '';
     $('#cidade').value = j.localidade || '';
     $('#uf').value     = j.uf         || '';
     setMsg('',true);
-  }).catch(function(){ setMsg('Erro no ViaCEP',false); });
-}
-
-/*** Datas/Horários helpers ***/
-function brDateLabel(ymd){
-  var p = String(ymd||'').split('-'); // [Y, M, D]
-  var dt = new Date(+p[0], (+p[1])-1, +p[2]);
-  try{
-    return dt.toLocaleDateString('pt-BR', { weekday:'short', day:'2-digit', month:'2-digit', year:'numeric' });
-  }catch(_){
-    return p[2]+'/'+p[1]+'/'+p[0];
-  }
-}
-function fillHorarios(lst, ymd){
-  var H = $('#horario'); H.innerHTML='';
-  var arr = (lst.horarios && lst.horarios[ymd]) ? lst.horarios[ymd] : [];
-  arr.forEach(function(h){
-    var o = document.createElement('option');
-    o.value = h; o.textContent = h;
-    H.appendChild(o);
-  });
-}
-function fillDatasEHorarios(lst){
-  var ds = $('#dataSel'); ds.innerHTML='';
-  (lst.datas||[]).forEach(function(d){
-    var o = document.createElement('option');
-    o.value = d; o.textContent = brDateLabel(d);
-    ds.appendChild(o);
-  });
-  if ((lst.datas||[]).length){
-    fillHorarios(lst, lst.datas[0]);
-    ds.onchange = function(){ fillHorarios(lst, ds.value); };
-  }else{
-    $('#horario').innerHTML='';
-  }
-}
-
-// Render de espécies (+ selects de armas se admin)
-function renderEspecies(lst, isAdmin){
-  var espList = $('#espList'); espList.innerHTML='';
-  var armaBox = $('#armaAdminBox');
-  var armaCont = $('#armaPorEspecie'); armaCont.innerHTML='';
-
-  // agrupa armas por espécie
-  var armasByEsp = {};
-  (lst.armas||[]).forEach(function(a){
-    var key = a.especie || '';
-    if (!key) return;
-    if (!armasByEsp[key]) armasByEsp[key] = [];
-    armasByEsp[key].push(a.alias);
-  });
-
-  (lst.especies||[]).forEach(function(esp){
-    // checkbox de espécie
-    var row = document.createElement('label');
-    row.style.display='block';
-    row.style.margin='6px 0';
-    row.innerHTML = '<input type="checkbox" value="'+esp+'"> ' + esp +
-                    ' <small class="muted">padrão: '+ ((lst.defaults && lst.defaults[esp]) ? lst.defaults[esp] : '-') +'</small>';
-    espList.appendChild(row);
-
-    if (isAdmin){
-      var wrap = document.createElement('div');
-      wrap.style.margin = '6px 0';
-      var sel = document.createElement('select');
-      sel.setAttribute('data-esp', esp);
-      var opt0 = document.createElement('option'); opt0.value=''; opt0.textContent='(usar padrão)';
-      sel.appendChild(opt0);
-      (armasByEsp[esp]||[]).forEach(function(alias){
-        var o = document.createElement('option'); o.value = alias; o.textContent = alias; sel.appendChild(o);
-      });
-      var small = document.createElement('small'); small.className='muted'; small.textContent='  – '+esp;
-      wrap.appendChild(sel); wrap.appendChild(small);
-      armaCont.appendChild(wrap);
-    }
-  });
-
-  armaBox.style.display = isAdmin ? 'block' : 'none';
+  }catch(e){ setMsg('Erro no ViaCEP',false); }
 }
 
 /*** Estado global ***/
-var session = null;
-var profile = null;
-var currentLists = null;   // últimas listas carregadas
-var currentEstande = '';   // estande ativo no formulário
+let session = null;
+let profile = null;
+let isAdmin = false;
+let estandeAtual = '';
+let especiesDisponiveis = [];
 
 /*** Login callback ***/
 async function onCred(res){
   try{
     log('onCred chamado. cred len = '+ (res.credential||'').length);
-    var who = await callJSONP({op:'whoami', idToken: res.credential});
+    const who = await callJSONP({op:'whoami', idToken: res.credential});
     if (!who.ok){ setMsg('Falha no login: '+(who.error||''), false); return; }
 
     session = who.session;
-    profile = {email: who.email, name: who.name, picture: who.picture, estande: who.estande, admin: who.admin};
+    profile = {email: who.email, name: who.name, picture: who.picture};
+    isAdmin = !!who.admin;
+    estandeAtual = who.estande || '';
 
     $('#auth').style.display='none';
     $('#app').style.display='block';
 
-    $('#boas').textContent = 'Olá, ' + (who.name||'') + '! 🎉';
-    $('#info').textContent = who.email + ' — Perfil: ' + (who.admin?'Admin/Instrutor':'Usuário');
+    $('#boas').textContent = `Olá, ${who.name}! 🎉`;
+    $('#info').textContent = `${who.email}`;
     $('#foto').src = who.picture || '';
-    $('#nome').value = '';
+    $('#nome').value = who.name || '';
 
-    // carregar listas iniciais
-    var lst = await callJSONP({op:'listar', session: session});
-    if (!lst.ok){ setMsg('Erro ao carregar listas: '+(lst.error||''), false); return; }
-    currentLists = lst;
-    currentEstande = lst.estande;
-
-    // Estande UI
-    if (who.admin){
-      var S = $('#estandeSel'); S.style.display='block'; $('#estandeText').style.display='none';
-      S.innerHTML='';
-      (lst.estandesAll||[]).forEach(function(e){
-        var o=document.createElement('option'); o.value=o.textContent=e; S.appendChild(o);
-      });
-      S.value = currentEstande || (S.options[0] ? S.options[0].value : '');
-      S.onchange = async function(){
-        currentEstande = S.value;
-        var disp = await callJSONP({op:'listar_disp', session:session, estande: currentEstande});
-        if (disp.ok){ fillDatasEHorarios(disp); } else { setMsg('Erro ao trocar estande', false); }
-      };
+    // estande UI
+    if (isAdmin){
+      $('#estTxt').style.display='none';
+      $('#estSel').style.display='inline-block';
+      $('#estSel').value = estandeAtual;
+      $('#armasAdminBox').style.display='block';
+      $('#admin').style.display='block';
+      $('#adEst').value = estandeAtual;
     }else{
-      $('#estandeSel').style.display='none';
-      $('#estandeText').style.display='block';
-      $('#estandeText').textContent = currentEstande || '(não mapeado)';
+      $('#estSel').style.display='none';
+      $('#estTxt').textContent = estandeAtual || '(sem estande)';
+      $('#estTxt').style.display='inline-flex';
+      $('#armasAdminBox').style.display='none';
+      $('#admin').style.display='none';
     }
 
-    // datas/horários do estande atual
-    fillDatasEHorarios(lst);
+    // carregar listas básicas (especies e horarios base)
+    const lst = await callJSONP({op:'listar', session});
+    if (!lst.ok){ setMsg('Erro ao carregar listas: '+(lst.error||''), false); return; }
 
-    // espécies + (se admin) selects de armas por espécie
-    renderEspecies(lst, !!who.admin);
+    especiesDisponiveis = lst.especies || [];
+    renderEspecies(especiesDisponiveis);
 
-    await showAdminIfNeeded(who);
+    // preenche horários conforme data (usando rota /slots)
+    $('#data').value = ''; // usuário escolhe
+    $('#horario').innerHTML = '';
+    $('#slotsHint').textContent = 'Escolha uma data para carregar os horários';
 
     setMsg('',true);
   }catch(e){
@@ -402,38 +329,68 @@ async function onCred(res){
   }
 }
 
+/*** Render de espécies (checkbox) ***/
+function renderEspecies(list){
+  const box = $('#espList'); box.innerHTML = '';
+  list.forEach(esp=>{
+    const id = 'esp_' + esp.replace(/\s+/g,'_');
+    const label = document.createElement('label');
+    label.className='pill'; label.htmlFor = id;
+    label.innerHTML = `<input type="checkbox" id="${id}" value="${esp}"> ${esp}`;
+    box.appendChild(label);
+  });
+}
+
 /*** Eventos UI ***/
-$('#btnPing').onclick = async function(){
+$('#btnPing').onclick = async ()=>{
   try{
-    var r = await callJSONP({op:'ping'});
+    const r = await callJSONP({op:'ping'});
     setMsg('Backend OK: '+ r.ts, true);
   }catch(e){ setMsg('Erro no backend: '+e.message, false); }
 };
 
-$('#cep').addEventListener('input', function(e){ e.target.value = maskCEP(e.target.value); });
-$('#cep').addEventListener('blur',  function(e){ buscaCEP(e.target.value); });
-$('#cpf').addEventListener('input', function(e){ e.target.value = maskCPF(e.target.value); });
-$('#tel').addEventListener('input', function(e){ e.target.value = maskTEL(e.target.value); });
+$('#cep').addEventListener('input', e => e.target.value = maskCEP(e.target.value));
+$('#cep').addEventListener('blur',  e => buscaCEP(e.target.value));
+$('#cpf').addEventListener('input', e => e.target.value = maskCPF(e.target.value));
+$('#tel').addEventListener('input', e => e.target.value = maskTEL(e.target.value));
 
-$('#frm').addEventListener('submit', async function(ev){
+function getEstandeAtual(){
+  return isAdmin ? ($('#estSel').value || estandeAtual) : estandeAtual;
+}
+
+// quando mudar data ou (se admin) o estande, pedir os horários válidos
+$('#data').addEventListener('change', loadSlots);
+$('#estSel').addEventListener('input', ()=>{ if($('#data').value) loadSlots(); });
+
+async function loadSlots(){
+  const d = $('#data').value; // yyyy-mm-dd
+  const est = getEstandeAtual();
+  if (!d || !est) return;
+  try{
+    const r = await callJSONP({op:'slots', session, date:d, estande:est});
+    if (!r.ok){ setMsg('Erro slots: '+(r.error||''), false); return; }
+    const h = $('#horario'); h.innerHTML='';
+    (r.slots||[]).forEach(x=>{
+      const o=document.createElement('option'); o.value=o.textContent=x; h.appendChild(o);
+    });
+    $('#slotsHint').textContent = r.slots?.length ? `${r.slots.length} horário(s) disponíveis` : 'Sem horários autorizados';
+  }catch(e){ setMsg('Erro slots: '+e.message,false); }
+}
+
+/*** Submit ***/
+$('#frm').addEventListener('submit', async (ev)=>{
   ev.preventDefault();
   setMsg('Enviando...', true);
 
-  var especiesSel = Array.from(document.querySelectorAll('#espList input[type=checkbox]:checked')).map(function(el){return el.value;});
-  var armasSelMap = {};
-  if (profile && profile.admin){
-    document.querySelectorAll('#armaPorEspecie select').forEach(function(sel){
-      if (sel.value) armasSelMap[sel.getAttribute('data-esp')] = sel.value;
-    });
-  }
+  // espécies selecionadas
+  const espSel = Array.from(document.querySelectorAll('#espList input[type=checkbox]:checked'))
+    .map(x=>x.value).join(', ');
 
-  var estParaSubmit = profile && profile.admin ? ($('#estandeSel').value || currentEstande) : currentEstande;
-
-  var payload = {
+  const payload = {
     op:'submit',
-    session: session,
-    estande: estParaSubmit,                    // admin pode trocar
-    nome: $('#nome').value,
+    session,
+    // quem agenda pode editar o nome
+    nome_atirador: $('#nome').value.trim(),
     cpf: $('#cpf').value,
     telefone: $('#tel').value,
     cep: $('#cep').value,
@@ -443,128 +400,55 @@ $('#frm').addEventListener('submit', async function(ev){
     bairro: $('#bairro').value,
     cidade: $('#cidade').value,
     uf: $('#uf').value,
-    data: $('#dataSel').value,                 // YYYY-MM-DD
-    horario: $('#horario').value,              // HH:MM
-    especies: especiesSel.join(','),           // "Pistola,Carabina"
-    armasSelecionadas: JSON.stringify(armasSelMap),
+    data: $('#data').value,            // yyyy-mm-dd
+    horario: $('#horario').value,
+    especies: espSel,
+    armas_escolhidas: isAdmin ? $('#armasTxt').value.trim() : '',
     obs: $('#obs').value
   };
 
+  if (!payload.nome_atirador){ setMsg('Informe o nome do atirador.', false); return; }
   if (!cpfOk(payload.cpf)){ setMsg('CPF inválido', false); return; }
+  if (!payload.data || !payload.horario){ setMsg('Informe data e horário.', false); return; }
 
   try{
-    var r = await callJSONP(payload);
+    const r = await callJSONP(payload);
     if (!r.ok){ setMsg('Erro: '+(r.error||'falha'), false); return; }
     setMsg(r.message || 'Agendado!', true);
     log(JSON.stringify(r, null, 2));
     $('#frm').reset();
-    // recarrega disponibilidade do estande atual (para refletir bloqueio do horário escolhido)
-    var disp = await callJSONP({op:'listar_disp', session:session, estande: estParaSubmit});
-    if (disp.ok){ fillDatasEHorarios(disp); }
+    $('#slotsHint').textContent = '';
   }catch(e){ setMsg('Erro ao enviar: '+e.message, false); }
 });
 
-/* ===== Admin only ===== (mantive seu painel) */
-async function adminBoot(){
-  var r = await callJSONP({op:'admin_boot', session:session});
-  if (!r.ok) { setMsg('Admin: '+(r.error||'falha'), false); return; }
-
-  // lista usuários
-  var UL = $('#cfgList'); UL.innerHTML='';
-  (r.configs||[]).forEach(function(c){
-    var row = document.createElement('div');
-    row.innerHTML = '<b>'+c.email+'</b> <small>→ '+c.estande+'</small> '+
-      '<small>'+(c.admin?'[ADMIN]':'')+'</small> '+
-      '<small>'+ (c.calendarId||'') +'</small>'+
-      '<div style="flex:1"></div><button data-email="'+c.email+'">Excluir</button>';
-    row.querySelector('button').onclick = async function(){
-      if (!confirm('Excluir '+c.email+'?')) return;
-      var out = await callJSONP({op:'admin_cfg_delete', session:session, email:c.email});
-      if (out.ok) adminBoot(); else alert(out.error||'falha');
-    };
-    UL.appendChild(row);
-  });
-
-  // popula estandes no select
-  var S = $('#admEst'); S.innerHTML='';
-  (r.estandesAll||[]).forEach(function(e){
-    var o=document.createElement('option'); o.value=o.textContent=e; S.appendChild(o);
-  });
-  if (S.options.length){ await adminLoadDetails(S.value); }
-}
-async function adminLoadDetails(est){
-  var r = await callJSONP({op:'admin_details', session:session, estande: est});
-  if (!r.ok){ setMsg('Admin details: '+(r.error||'falha'), false); return; }
-
-  // armas
-  var AL = $('#armaList'); AL.innerHTML='';
-  (r.armas||[]).forEach(function(a){
-    var chip = document.createElement('span');
-    chip.className='chip';
-    chip.innerHTML = a + ' <button title="remover">✕</button>';
-    chip.querySelector('button').onclick = async function(){
-      var out = await callJSONP({op:'admin_arma_del', session: session, estande: est, arma:a});
-      if (out.ok) adminLoadDetails(est); else alert(out.error||'falha');
-    };
-    AL.appendChild(chip);
-  });
-
-  // horários
-  var HL = $('#horList'); HL.innerHTML='';
-  (r.horarios||[]).forEach(function(h){
-    var chip = document.createElement('span');
-    chip.className='chip';
-    chip.innerHTML = h + ' <button title="remover">✕</button>';
-    chip.querySelector('button').onclick = async function(){
-      var out = await callJSONP({op:'admin_hor_del', session: session, estande: est, horario:h});
-      if (out.ok) adminLoadDetails(est); else alert(out.error||'falha');
-    };
-    HL.appendChild(chip);
-  });
-}
-
-/* eventos admin */
-$('#cfgForm').addEventListener('submit', async function(ev){
-  ev.preventDefault();
-  var email = $('#cfgEmail').value.trim();
-  var est   = $('#cfgEstande').value.trim();
-  var adm   = $('#cfgAdmin').value;
-  var cal   = $('#cfgCal').value.trim();
-  if (!email || !est){ alert('Preencha email e estande'); return; }
-  var r = await callJSONP({op:'admin_cfg_upsert', session:session, email:email, estande:est, admin:adm, calendarId:cal});
-  if (r.ok){ setMsg('Config salva', true); adminBoot(); } else alert(r.error||'falha');
-});
-$('#admEst').addEventListener('change', function(ev){ adminLoadDetails(ev.target.value); });
-$('#armaAdd').onclick = async function(){
-  // OBS: esses endpoints antigos administram por estande simples (modelo anterior).
-  // Para o novo modelo (armas por instrutor), use admin_arma_add modernizado no painel dedicado (futuro).
-  var est = $('#admEst').value, arma = $('#armaNew').value.trim();
-  if (!est || !arma) return;
-  var r = await callJSONP({op:'admin_arma_add', session:session, especie:'', alias:arma});
-  if (r.ok){ $('#armaNew').value=''; adminLoadDetails(est); } else alert(r.error||'falha');
-};
-$('#horAdd').onclick = async function(){
-  var est = $('#admEst').value, h = $('#horNew').value.trim();
-  if (!est || !h) return;
-  var r = await callJSONP({op:'admin_dispon_add', session:session, estande:est, data: $('#dataSel').value || '', horario: h});
-  if (r.ok){ $('#horNew').value=''; adminLoadDetails(est); } else alert(r.error||'falha');
+/*** ADMIN ACTIONS ***/
+$('#btnAddDisp').onclick = async ()=>{
+  try{
+    const est = $('#adEst').value.trim() || getEstandeAtual();
+    const d   = $('#adData').value;
+    const h   = $('#adHora').value.trim();
+    const usr = $('#adUser').value.trim();
+    if (!est || !d || !h){ alert('Preencha estande, data e horário.'); return; }
+    const r = await callJSONP({op:'admin_disp_add', session, estande:est, data:d, horario:h, user_email:usr});
+    if (r.ok){ setMsg('Disponibilidade registrada', true); if($('#data').value===d) loadSlots(); }
+    else setMsg('Admin: '+(r.error||'falha'), false);
+  }catch(e){ setMsg('Admin: '+e.message,false); }
 };
 
-/* ligar o admin quando logar */
-async function showAdminIfNeeded(who){
-  if (who.admin){
-    $('#admin').style.display='block';
-    await adminBoot();
-  }
-}
-</script>
-
-<script>
-// chama admin após login, se aplicável
-// (onCred já mostra app; aqui só acoplamos admin boot ao final do load)
-document.addEventListener('DOMContentLoaded', function(){
-  // nada adicional aqui; showAdminIfNeeded é chamado dentro do fluxo se preferir
-});
+$('#btnAddRegra').onclick = async ()=>{
+  try{
+    const tt = $('#rgTarget').value;
+    const tv = $('#rgValue').value.trim() || (tt==='estande' ? getEstandeAtual() : '');
+    const wd = $('#rgWeekday').value;
+    const hr = $('#rgHora').value.trim();
+    const sd = $('#rgIni').value.trim();
+    const ed = $('#rgFim').value.trim();
+    if (!tt || !wd || !hr || (tt!=='all' && !tv)){ alert('Preencha os campos obrigatórios.'); return; }
+    const r = await callJSONP({op:'admin_regra_add', session, target_type:tt, target_value:tv, weekday:wd, horario:hr, start_date:sd, end_date:ed});
+    if (r.ok){ setMsg('Regra adicionada', true); if($('#data').value) loadSlots(); }
+    else setMsg('Admin: '+(r.error||'falha'), false);
+  }catch(e){ setMsg('Admin: '+e.message,false); }
+};
 </script>
 </body>
 </html>

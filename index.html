@@ -13,7 +13,6 @@
     h1{font-size:28px;margin:6px 0 16px}
     .muted{color:var(--muted)}
     .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    .row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
     label{display:block;font-size:13px;margin-top:10px}
     input,select,textarea{width:100%;padding:10px 12px;border:1px solid #d9dbe0;border-radius:10px;background:#fff;font:inherit}
     textarea{min-height:80px;resize:vertical}
@@ -22,10 +21,11 @@
     img{border-radius:50%}
     .sp{height:10px}
     pre{white-space:pre-wrap;background:#0f1115;color:#dfe1e5;padding:10px;border-radius:10px;font-size:12px}
-    .chip{display:inline-flex;gap:6px;align-items:center;background:#eef2ff;border-radius:999px;padding:6px 10px;margin:6px 6px 0 0}
-    #admin{border:1px dashed #cbd5e1;background:#fbfdff}
     .inline{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
     .pill{display:inline-flex;align-items:center;gap:8px;border:1px solid #d9dbe0;border-radius:999px;padding:6px 10px;margin:6px 6px 0 0}
+    .esp-item{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;border:1px solid #e6e8ef;border-radius:12px;padding:8px 10px;margin-top:8px;background:#fff}
+    .disabled-note{font-size:12px;color:#6b7280}
+    .link{margin-left:8px;font-size:14px}
   </style>
 </head>
 <body>
@@ -53,69 +53,15 @@
       </div>
       <div style="flex:1"></div>
       <button id="btnPing" type="button">Testar backend (ping)</button>
+      <a id="adminLink" class="link" href="admin.html" style="display:none" target="_blank">Abrir Painel Admin</a>
     </div>
 
-    <!-- Estabelecimento / Estande -->
     <div class="sp"></div>
-    <div id="estBox" class="inline">
+    <div class="inline">
       <label style="margin:0">Estande:</label>
-      <!-- Para não-admin ficará somente texto; para admin vira input editável -->
+      <!-- não-admin: texto; admin: input -->
       <input id="estSel" placeholder="Estande" style="max-width:280px;display:none">
       <span id="estTxt" class="pill"></span>
-    </div>
-
-    <!-- PAINEL ADMIN (autorizações) -->
-    <div id="admin" class="card" style="display:none;margin-top:14px">
-      <h3>Painel Admin</h3>
-
-      <h4>Disponibilidade (pontual)</h4>
-      <div class="row">
-        <div>
-          <label>Estande</label><input id="adEst" placeholder="ex.: WestGun">
-          <label>Data</label><input id="adData" type="date">
-        </div>
-        <div>
-          <label>Horário (HH:mm)</label><input id="adHora" placeholder="18:30">
-          <label>Somente para este e-mail (opcional)</label><input id="adUser" placeholder="usuario@dominio.com">
-        </div>
-      </div>
-      <div class="sp"></div>
-      <div class="inline">
-        <button id="btnAddDisp" type="button">Autorizar</button>
-      </div>
-
-      <div class="sp"></div><hr/><div class="sp"></div>
-
-      <h4>Regra recorrente (ex.: TER 18:30)</h4>
-      <div class="row-3">
-        <div>
-          <label>Alvo</label>
-          <select id="rgTarget">
-            <option value="all">Todos</option>
-            <option value="user">Usuário</option>
-            <option value="estande">Estande</option>
-          </select>
-          <label>Valor (e-mail ou estande)</label><input id="rgValue" placeholder="multi3@gmail.com ou WestGun">
-        </div>
-        <div>
-          <label>Dia da semana</label>
-          <select id="rgWeekday">
-            <option value="SEG">Segunda</option><option value="TER">Terça</option>
-            <option value="QUA">Quarta</option><option value="QUI">Quinta</option>
-            <option value="SEX">Sexta</option><option value="SAB">Sábado</option>
-            <option value="DOM">Domingo</option>
-          </select>
-          <label>Horário (HH:mm)</label><input id="rgHora" placeholder="18:30">
-        </div>
-        <div>
-          <label>Início (opcional)</label><input id="rgIni" type="date">
-          <label>Fim (opcional)</label><input id="rgFim" type="date">
-        </div>
-      </div>
-      <div class="sp"></div>
-      <div class="inline">
-        <button id="btnAddRegra" type="button">Adicionar regra</button>
-      </div>
     </div>
 
     <div class="sp"></div><hr/><div class="sp"></div>
@@ -189,17 +135,10 @@
         </div>
       </div>
 
-      <!-- ESPÉCIES (sempre visível) -->
+      <!-- ESPÉCIES + ARMA PADRÃO/SELEÇÃO -->
       <div>
-        <label>Espécie(s) de arma</label>
-        <div id="espList" class="inline"></div>
-        <small class="muted">Se nenhuma arma for digitada abaixo, usaremos a arma padrão de cada espécie selecionada.</small>
-      </div>
-
-      <!-- Opcional: admin pode escrever armas específicas -->
-      <div id="armasAdminBox" style="display:none">
-        <label>Armas (opcional, admin pode sobrescrever)</label>
-        <input id="armasTxt" placeholder="ex.: TS9; G25; RT889">
+        <label>Espécie(s) de arma &nbsp;<span class="disabled-note" id="espHint"></span></label>
+        <div id="espWrap"></div>
       </div>
 
       <label>Observações</label>
@@ -264,23 +203,18 @@ async function buscaCEP(cep){
     $('#bairro').value = j.bairro     || '';
     $('#cidade').value = j.localidade || '';
     $('#uf').value     = j.uf         || '';
-    setMsg('',true);
   }catch(e){ setMsg('Erro no ViaCEP',false); }
 }
 
 /*** Estado global ***/
-let session = null;
-let profile = null;
-let isAdmin = false;
-let estandeAtual = '';
-let especiesDisponiveis = [];
+let session=null, profile=null, isAdmin=false, estandeAtual='';
+let especies=[], armasPorEsp={}, padraoPorEsp={};
 
 /*** Login callback ***/
 async function onCred(res){
   try{
-    log('onCred chamado. cred len = '+ (res.credential||'').length);
     const who = await callJSONP({op:'whoami', idToken: res.credential});
-    if (!who.ok){ setMsg('Falha no login: '+(who.error||''), false); return; }
+    if (!who.ok) { setMsg('Falha no login: '+(who.error||''), false); return; }
 
     session = who.session;
     profile = {email: who.email, name: who.name, picture: who.picture};
@@ -294,102 +228,123 @@ async function onCred(res){
     $('#info').textContent = `${who.email}`;
     $('#foto').src = who.picture || '';
     $('#nome').value = who.name || '';
-
-    // estande UI
     if (isAdmin){
-      $('#estTxt').style.display='none';
+      $('#adminLink').style.display='inline';
       $('#estSel').style.display='inline-block';
       $('#estSel').value = estandeAtual;
-      $('#armasAdminBox').style.display='block';
-      $('#admin').style.display='block';
-      $('#adEst').value = estandeAtual;
-    }else{
+      $('#estTxt').style.display='none';
+    } else {
+      $('#adminLink').style.display='none';
       $('#estSel').style.display='none';
       $('#estTxt').textContent = estandeAtual || '(sem estande)';
       $('#estTxt').style.display='inline-flex';
-      $('#armasAdminBox').style.display='none';
-      $('#admin').style.display='none';
     }
 
-    // carregar listas básicas (especies e horarios base)
+    // listas base
     const lst = await callJSONP({op:'listar', session});
     if (!lst.ok){ setMsg('Erro ao carregar listas: '+(lst.error||''), false); return; }
 
-    especiesDisponiveis = lst.especies || [];
-    renderEspecies(especiesDisponiveis);
+    especies   = lst.especies || [];
+    armasPorEsp = lst.armas_por_especie || {};     // { "Pistola": ["TS9","G25",...] }
+    padraoPorEsp = lst.padrao_por_especie || {};   // { "Pistola":"TS9", ... }
 
-    // preenche horários conforme data (usando rota /slots)
-    $('#data').value = ''; // usuário escolhe
+    renderEspecies();
+
+    $('#data').value = '';
     $('#horario').innerHTML = '';
     $('#slotsHint').textContent = 'Escolha uma data para carregar os horários';
-
-    setMsg('',true);
+    $('#espHint').textContent   = isAdmin ? 'Você pode trocar a arma de cada espécie.' : 'A arma padrão de cada espécie será usada.';
   }catch(e){
     setMsg('Erro de autenticação: '+e, false);
   }
 }
 
-/*** Render de espécies (checkbox) ***/
-function renderEspecies(list){
-  const box = $('#espList'); box.innerHTML = '';
-  list.forEach(esp=>{
-    const id = 'esp_' + esp.replace(/\s+/g,'_');
-    const label = document.createElement('label');
-    label.className='pill'; label.htmlFor = id;
-    label.innerHTML = `<input type="checkbox" id="${id}" value="${esp}"> ${esp}`;
-    box.appendChild(label);
+/*** Render de espécies e selects ***/
+function renderEspecies(){
+  const wrap = $('#espWrap'); wrap.innerHTML = '';
+  especies.forEach(esp=>{
+    const chkId = 'chk_'+esp.replace(/\s+/g,'_');
+    const selId = 'sel_'+esp.replace(/\s+/g,'_');
+
+    const div = document.createElement('div');
+    div.className = 'esp-item';
+    div.innerHTML = `
+      <label class="inline" for="${chkId}">
+        <input type="checkbox" id="${chkId}" value="${esp}">
+        ${esp}
+      </label>
+      <select id="${selId}" data-esp="${esp}"></select>
+      <small class="muted">padrão: <b>${padraoPorEsp[esp]||'-'}</b></small>
+    `;
+    wrap.appendChild(div);
+
+    const sel = div.querySelector('select');
+    const armas = armasPorEsp[esp] || [];
+    armas.forEach(a=>{
+      const o=document.createElement('option'); o.value=o.textContent=a; sel.appendChild(o);
+    });
+    // seleciona o padrão
+    const pad = padraoPorEsp[esp];
+    if (pad) sel.value = pad;
+
+    // não-admin não pode trocar a arma (fica no padrão)
+    if (!isAdmin) { sel.disabled = true; }
+
+    // marcar/desmarcar check altera required do select (apenas visual/UX)
+    const chk = div.querySelector('input[type=checkbox]');
+    chk.addEventListener('change', ()=>{
+      sel.disabled = !isAdmin || !chk.checked; // admin só habilita se marcado
+      if (!chk.checked) sel.value = padraoPorEsp[esp] || (armas[0]||'');
+    });
   });
 }
 
-/*** Eventos UI ***/
-$('#btnPing').onclick = async ()=>{
-  try{
-    const r = await callJSONP({op:'ping'});
-    setMsg('Backend OK: '+ r.ts, true);
-  }catch(e){ setMsg('Erro no backend: '+e.message, false); }
-};
-
-$('#cep').addEventListener('input', e => e.target.value = maskCEP(e.target.value));
-$('#cep').addEventListener('blur',  e => buscaCEP(e.target.value));
-$('#cpf').addEventListener('input', e => e.target.value = maskCPF(e.target.value));
-$('#tel').addEventListener('input', e => e.target.value = maskTEL(e.target.value));
-
-function getEstandeAtual(){
-  return isAdmin ? ($('#estSel').value || estandeAtual) : estandeAtual;
-}
-
-// quando mudar data ou (se admin) o estande, pedir os horários válidos
+/*** Slots: data/estande ***/
+function getEstandeAtual(){ return isAdmin ? ($('#estSel').value || estandeAtual) : estandeAtual; }
 $('#data').addEventListener('change', loadSlots);
 $('#estSel').addEventListener('input', ()=>{ if($('#data').value) loadSlots(); });
 
 async function loadSlots(){
-  const d = $('#data').value; // yyyy-mm-dd
-  const est = getEstandeAtual();
+  const d = $('#data').value, est = getEstandeAtual();
   if (!d || !est) return;
   try{
     const r = await callJSONP({op:'slots', session, date:d, estande:est});
     if (!r.ok){ setMsg('Erro slots: '+(r.error||''), false); return; }
     const h = $('#horario'); h.innerHTML='';
-    (r.slots||[]).forEach(x=>{
-      const o=document.createElement('option'); o.value=o.textContent=x; h.appendChild(o);
-    });
+    (r.slots||[]).forEach(x=>{ const o=document.createElement('option'); o.value=o.textContent=x; h.appendChild(o); });
     $('#slotsHint').textContent = r.slots?.length ? `${r.slots.length} horário(s) disponíveis` : 'Sem horários autorizados';
   }catch(e){ setMsg('Erro slots: '+e.message,false); }
 }
+
+/*** Eventos simples ***/
+$('#btnPing').onclick = async ()=>{
+  try{ const r = await callJSONP({op:'ping'}); setMsg('Backend OK: '+ r.ts, true); }
+  catch(e){ setMsg('Erro no backend: '+e.message, false); }
+};
+$('#cep').addEventListener('input', e => e.target.value = maskCEP(e.target.value));
+$('#cep').addEventListener('blur',  e => buscaCEP(e.target.value));
+$('#cpf').addEventListener('input', e => e.target.value = maskCPF(e.target.value));
+$('#tel').addEventListener('input', e => e.target.value = maskTEL(e.target.value));
 
 /*** Submit ***/
 $('#frm').addEventListener('submit', async (ev)=>{
   ev.preventDefault();
   setMsg('Enviando...', true);
 
-  // espécies selecionadas
-  const espSel = Array.from(document.querySelectorAll('#espList input[type=checkbox]:checked'))
-    .map(x=>x.value).join(', ');
+  const marcadas = Array.from(document.querySelectorAll('#espWrap input[type=checkbox]:checked'))
+                    .map(x=>x.value);
+
+  // monta "armas_escolhidas": admin usa o valor do select; não-admin usa o padrão
+  const armasEscolhidas = marcadas.map(esp=>{
+    const sel = document.querySelector(`#sel_${esp.replace(/\s+/g,'_')}`);
+    if (isAdmin && sel) return `${esp}:${sel.value}`;
+    const pad = padraoPorEsp[esp] || (armasPorEsp[esp]?.[0]||'');
+    return `${esp}:${pad}`;
+  }).join('; ');
 
   const payload = {
     op:'submit',
     session,
-    // quem agenda pode editar o nome
     nome_atirador: $('#nome').value.trim(),
     cpf: $('#cpf').value,
     telefone: $('#tel').value,
@@ -402,8 +357,8 @@ $('#frm').addEventListener('submit', async (ev)=>{
     uf: $('#uf').value,
     data: $('#data').value,            // yyyy-mm-dd
     horario: $('#horario').value,
-    especies: espSel,
-    armas_escolhidas: isAdmin ? $('#armasTxt').value.trim() : '',
+    especies: marcadas.join(', '),
+    armas_escolhidas: armasEscolhidas,
     obs: $('#obs').value
   };
 
@@ -420,35 +375,6 @@ $('#frm').addEventListener('submit', async (ev)=>{
     $('#slotsHint').textContent = '';
   }catch(e){ setMsg('Erro ao enviar: '+e.message, false); }
 });
-
-/*** ADMIN ACTIONS ***/
-$('#btnAddDisp').onclick = async ()=>{
-  try{
-    const est = $('#adEst').value.trim() || getEstandeAtual();
-    const d   = $('#adData').value;
-    const h   = $('#adHora').value.trim();
-    const usr = $('#adUser').value.trim();
-    if (!est || !d || !h){ alert('Preencha estande, data e horário.'); return; }
-    const r = await callJSONP({op:'admin_disp_add', session, estande:est, data:d, horario:h, user_email:usr});
-    if (r.ok){ setMsg('Disponibilidade registrada', true); if($('#data').value===d) loadSlots(); }
-    else setMsg('Admin: '+(r.error||'falha'), false);
-  }catch(e){ setMsg('Admin: '+e.message,false); }
-};
-
-$('#btnAddRegra').onclick = async ()=>{
-  try{
-    const tt = $('#rgTarget').value;
-    const tv = $('#rgValue').value.trim() || (tt==='estande' ? getEstandeAtual() : '');
-    const wd = $('#rgWeekday').value;
-    const hr = $('#rgHora').value.trim();
-    const sd = $('#rgIni').value.trim();
-    const ed = $('#rgFim').value.trim();
-    if (!tt || !wd || !hr || (tt!=='all' && !tv)){ alert('Preencha os campos obrigatórios.'); return; }
-    const r = await callJSONP({op:'admin_regra_add', session, target_type:tt, target_value:tv, weekday:wd, horario:hr, start_date:sd, end_date:ed});
-    if (r.ok){ setMsg('Regra adicionada', true); if($('#data').value) loadSlots(); }
-    else setMsg('Admin: '+(r.error||'falha'), false);
-  }catch(e){ setMsg('Admin: '+e.message,false); }
-};
 </script>
 </body>
 </html>

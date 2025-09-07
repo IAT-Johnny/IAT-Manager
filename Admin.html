@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <title>Painel Admin — IAT</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    :root{--bg:#f6f7fb;--card:#fff;--fg:#111;--muted:#666;--pri:#1a73e8}
+    body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--fg);margin:0}
+    .wrap{max-width:1100px;margin:32px auto;padding:0 16px}
+    .card{background:var(--card);border-radius:16px;padding:16px 18px;box-shadow:0 12px 32px rgba(20,20,20,.06)}
+    h1{font-size:26px;margin:6px 0 16px}
+    nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+    nav a{padding:10px 14px;border-radius:12px;border:1px solid #d9dbe0;color:#111;text-decoration:none;background:#fff}
+    nav a.active{background:#e8f0fe;border-color:#bcd2fe}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    label{display:block;font-size:13px;margin-top:10px}
+    input,select,textarea{width:100%;padding:10px 12px;border:1px solid #d9dbe0;border-radius:10px;background:#fff;font:inherit}
+    button{background:var(--pri);color:#fff;border:0;padding:10px 16px;border-radius:12px;cursor:pointer}
+    .muted{color:var(--muted)}
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    th,td{border-bottom:1px solid #eee;padding:8px 6px;text-align:left;font-size:14px}
+    .sp{height:10px}
+    .ok{color:#137333}.err{color:#b00020}
+    .danger{background:#fee2e2;color:#991b1b;border:0}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Painel Admin</h1>
+
+  <div id="auth" class="card">
+    <div id="g_id_onload"
+         data-client_id="826003708445-8612nadjq2l7ahb4ht0bpq47csp1rbpb.apps.googleusercontent.com"
+         data-callback="onCred"
+         data-auto_prompt="false"></div>
+    <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-shape="pill"></div>
+    <div class="sp"></div>
+    <div class="muted">Apenas contas marcadas como admin.</div>
+  </div>
+
+  <div id="app" style="display:none">
+    <nav>
+      <a href="#usuarios"  id="tabUsuarios"  class="active">Usuários (Config)</a>
+      <a href="#disp"      id="tabDisp">Disponibilidade & Regras</a>
+      <a href="#armas"     id="tabArmas">Armas</a>
+      <a href="#estandes"  id="tabEstandes">Estandes</a>
+    </nav>
+
+    <!-- USUÁRIOS -->
+    <section id="secUsuarios" class="card">
+      <h3>Usuários ↔ Estande padrão</h3>
+      <div class="row">
+        <div>
+          <label>Email</label><input id="cfgEmail" type="email">
+          <label>Estande padrão</label><input id="cfgEst">
+        </div>
+        <div>
+          <label>Admin?</label>
+          <select id="cfgAdmin"><option value="FALSE">FALSE</option><option value="TRUE">TRUE</option></select>
+          <label>Calendar ID (opcional)</label><input id="cfgCal">
+        </div>
+      </div>
+      <div class="sp"></div>
+      <button id="btnCfgSalvar" type="button">Salvar</button>
+      <button id="btnCfgNovo" type="button" style="margin-left:8px">Novo</button>
+
+      <table id="tblCfg">
+        <thead><tr><th>Email</th><th>Estande</th><th>Admin</th><th>Calendar</th><th>Ações</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <!-- DISPONIBILIDADE -->
+    <section id="secDisp" class="card" style="display:none">
+      <h3>Disponibilidade (pontual)</h3>
+      <div class="row">
+        <div>
+          <label>Estande</label><input id="adEst">
+          <label>Data</label><input id="adData" type="date">
+        </div>
+        <div>
+          <label>Horário (HH:mm)</label><input id="adHora" placeholder="18:30">
+          <label>Somente para e-mail (opcional)</label><input id="adUser" placeholder="usuario@dominio.com">
+        </div>
+      </div>
+      <div class="sp"></div>
+      <button id="btnAddDisp" type="button">Autorizar</button>
+
+      <div class="sp"></div><hr/><div class="sp"></div>
+
+      <h3>Regra recorrente semanal</h3>
+      <div class="row">
+        <div>
+          <label>Alvo</label>
+          <select id="rgTarget">
+            <option value="all">Todos</option>
+            <option value="user">Usuário</option>
+            <option value="estande">Estande</option>
+          </select>
+          <label>Valor (email ou estande)</label><input id="rgValue">
+        </div>
+        <div>
+          <label>Dia</label>
+          <select id="rgWeekday">
+            <option value="SEG">Segunda</option><option value="TER">Terça</option>
+            <option value="QUA">Quarta</option><option value="QUI">Quinta</option>
+            <option value="SEX">Sexta</option><option value="SAB">Sábado</option>
+            <option value="DOM">Domingo</option>
+          </select>
+          <label>Horário</label><input id="rgHora" placeholder="18:30">
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label>Início (opcional)</label><input id="rgIni" type="date">
+        </div>
+        <div>
+          <label>Fim (opcional)</label><input id="rgFim" type="date">
+        </div>
+      </div>
+      <div class="sp"></div>
+      <button id="btnAddRegra" type="button">Adicionar regra</button>
+    </section>
+
+    <!-- ARMAS (placeholder para próxima etapa) -->
+    <section id="secArmas" class="card" style="display:none">
+      <h3>Armas (por instrutor)</h3>
+      <p class="muted">Estrutura pronta — na próxima etapa ligamos os endpoints para listar/editar as armas do instrutor.</p>
+    </section>
+
+    <!-- ESTANDES (placeholder para próxima etapa) -->
+    <section id="secEstandes" class="card" style="display:none">
+      <h3>Estandes</h3>
+      <p class="muted">Estrutura pronta — na próxima etapa ligamos os endpoints de cadastro/edição.</p>
+    </section>
+
+    <div class="sp"></div>
+    <div id="msg" class="muted"></div>
+  </div>
+</div>
+
+<script>
+const GAS_URL   = 'https://script.google.com/macros/s/AKfycbwrYWQ3gVE3wSobk3w049hva6R5wmN9WayxuUh9itl1qvOQVaHXF9_JxEmgSQ9YMliy/exec';
+
+function callJSONP(params, timeoutMs=20000){
+  return new Promise((resolve, reject)=>{
+    const cb = 'cb_' + Math.random().toString(36).slice(2);
+    const url = GAS_URL + (GAS_URL.includes('?')?'&':'?') +
+      Object.entries(params).map(([k,v])=>encodeURIComponent(k)+'='+encodeURIComponent(v)).join('&') +
+      '&callback=' + encodeURIComponent(cb) + '&t=' + Date.now();
+    const s = document.createElement('script'); s.async = true; s.referrerPolicy='no-referrer';
+    let done=false;
+    function cleanup(){ try{delete window[cb]}catch{}; s.remove(); }
+    window[cb] = (data)=>{ done=true; cleanup(); resolve(data); };
+    s.onerror = ()=>{ cleanup(); reject(new Error('erro de script JSONP')); };
+    s.src = url; document.body.appendChild(s);
+    setTimeout(()=>{ if(!done){ cleanup(); reject(new Error('timeout')); } }, timeoutMs);
+  });
+}
+const $ = sel => document.querySelector(sel);
+function setMsg(t,ok){ const el=$('#msg'); el.textContent=t||''; el.className = ok?'ok':'err'; }
+
+let session=null, me=null;
+
+async function onCred(res){
+  try{
+    const who = await callJSONP({op:'whoami', idToken: res.credential});
+    if (!who.ok || !who.admin){ $('#auth').style.display='block'; setMsg('Acesso negado (não-admin).', false); return; }
+    session = who.session; me = who;
+    $('#auth').style.display='none'; $('#app').style.display='block';
+    $('#adEst').value = who.estande || '';
+    await bootUsuarios();
+  }catch(e){ setMsg('Login falhou: '+e, false); }
+}
+
+/* ===== Navegação simples ===== */
+const tabs = [
+  ['tabUsuarios','secUsuarios'],
+  ['tabDisp','secDisp'],
+  ['tabArmas','secArmas'],
+  ['tabEstandes','secEstandes'],
+];
+tabs.forEach(([t,s])=>{
+  $('#'+t).onclick = (ev)=>{
+    ev.preventDefault();
+    tabs.forEach(([tt,ss])=>{
+      $('#'+tt).classList.remove('active');
+      $('#'+ss).style.display = 'none';
+    });
+    $('#'+t).classList.add('active');
+    $('#'+s).style.display = 'block';
+  };
+});
+
+/* ===== Usuários (Config) ===== */
+async function bootUsuarios(){
+  const r = await callJSONP({op:'admin_boot', session});
+  if (!r.ok){ setMsg('Erro ao carregar configs: '+(r.error||''), false); return; }
+  const tb = $('#tblCfg tbody'); tb.innerHTML='';
+  (r.configs||[]).forEach(c=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${c.email||''}</td><td>${c.estande||''}</td><td>${c.admin?'TRUE':'FALSE'}</td><td>${c.calendarId||''}</td>
+      <td><button data-e="${c.email}">Editar</button> <button class="danger" data-d="${c.email}">Excluir</button></td>`;
+    tb.appendChild(tr);
+  });
+
+  // editar
+  tb.querySelectorAll('button[data-e]').forEach(b=>{
+    b.onclick = ()=>{
+      const row = b.closest('tr').children;
+      $('#cfgEmail').value = row[0].textContent;
+      $('#cfgEst').value   = row[1].textContent;
+      $('#cfgAdmin').value = row[2].textContent==='TRUE'?'TRUE':'FALSE';
+      $('#cfgCal').value   = row[3].textContent;
+    };
+  });
+  // excluir
+  tb.querySelectorAll('button[data-d]').forEach(b=>{
+    b.onclick = async ()=>{
+      const email = b.getAttribute('data-d');
+      if (!confirm('Excluir '+email+'?')) return;
+      const out = await callJSONP({op:'admin_cfg_delete', session, email});
+      if (out.ok) { setMsg('Excluído', true); bootUsuarios(); } else setMsg(out.error||'falha', false);
+    };
+  });
+}
+$('#btnCfgNovo').onclick = ()=>{ $('#cfgEmail').value=''; $('#cfgEst').value=''; $('#cfgAdmin').value='FALSE'; $('#cfgCal').value=''; };
+$('#btnCfgSalvar').onclick = async ()=>{
+  const email=$('#cfgEmail').value.trim(), est=$('#cfgEst').value.trim(), adm=$('#cfgAdmin').value, cal=$('#cfgCal').value.trim();
+  if (!email || !est){ setMsg('Preencha email e estande', false); return; }
+  const r = await callJSONP({op:'admin_cfg_upsert', session, email, estande:est, admin:adm, calendarId:cal});
+  if (r.ok){ setMsg('Salvo', true); bootUsuarios(); } else setMsg(r.error||'falha', false);
+};
+
+/* ===== Disponibilidade & Regras ===== */
+$('#btnAddDisp').onclick = async ()=>{
+  const est = $('#adEst').value.trim();
+  const d   = $('#adData').value;
+  const h   = $('#adHora').value.trim();
+  const usr = $('#adUser').value.trim();
+  if (!est || !d || !h){ setMsg('Preencha estande, data e horário', false); return; }
+  const r = await callJSONP({op:'admin_disp_add', session, estande:est, data:d, horario:h, user_email:usr});
+  setMsg(r.ok?'Disponibilidade registrada':(r.error||'falha'), r.ok);
+};
+
+$('#btnAddRegra').onclick = async ()=>{
+  const tt = $('#rgTarget').value;
+  const tv = $('#rgValue').value.trim();
+  const wd = $('#rgWeekday').value;
+  const hr = $('#rgHora').value.trim();
+  const sd = $('#rgIni').value.trim();
+  const ed = $('#rgFim').value.trim();
+  if (!wd || !hr || (tt!=='all' && !tv)){ setMsg('Preencha alvo/valor (se necessário), dia e horário', false); return; }
+  const r = await callJSONP({op:'admin_regra_add', session, target_type:tt, target_value:tv, weekday:wd, horario:hr, start_date:sd, end_date:ed});
+  setMsg(r.ok?'Regra adicionada':(r.error||'falha'), r.ok);
+};
+</script>
+</body>
+</html>

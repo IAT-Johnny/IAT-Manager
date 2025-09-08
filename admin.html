@@ -99,6 +99,14 @@
 
       <div class="sp"></div><hr/><div class="sp"></div>
 
+      <h3>Disponibilidades cadastradas</h3>
+      <table id="tblDisp">
+        <thead><tr><th>Estande</th><th>Data</th><th>Horário</th><th>Somente p/ e-mail</th><th>Autorizado por</th><th>Ações</th></tr></thead>
+        <tbody></tbody>
+      </table>
+
+      <div class="sp"></div><hr/><div class="sp"></div>
+
       <h3>Regra recorrente semanal</h3>
       <div class="row">
         <div>
@@ -178,6 +186,7 @@ async function onCred(res){
     $('#adEst').value = who.estande || '';
     await bootUsuarios();
     await loadAdminDicts();
+    await loadDisponibilidades(); // carrega a lista
   }catch(e){ setMsg('Login falhou: '+e, false); }
 }
 
@@ -222,101 +231,4 @@ async function bootUsuarios(){
       $('#cfgEmail').value = row[1].textContent;
       $('#cfgEst').value   = row[2].textContent;
       $('#cfgAdmin').value = row[3].textContent==='TRUE'?'TRUE':'FALSE';
-      $('#cfgCal').value   = row[4].textContent;
-    };
-  });
-  // excluir
-  tb.querySelectorAll('button[data-d]').forEach(b=>{
-    b.onclick = async ()=>{
-      const email = b.getAttribute('data-d');
-      if (!confirm('Excluir '+email+'?')) return;
-      const out = await callJSONP({op:'admin_cfg_delete', session, email});
-      if (out.ok) { setMsg('Excluído', true); bootUsuarios(); } else setMsg(out.error||'falha', false);
-    };
-  });
-}
-$('#btnCfgNovo').onclick = ()=>{ $('#cfgEmail').value=''; $('#cfgNome').value=''; $('#cfgEst').value=''; $('#cfgAdmin').value='FALSE'; $('#cfgCal').value=''; };
-$('#btnCfgSalvar').onclick = async ()=>{
-  const email=$('#cfgEmail').value.trim(), nome=$('#cfgNome').value.trim(), est=$('#cfgEst').value.trim(), adm=$('#cfgAdmin').value, cal=$('#cfgCal').value.trim();
-  if (!email || !est){ setMsg('Preencha email e estande', false); return; }
-  const r = await callJSONP({op:'admin_cfg_upsert', session, email, nome, estande:est, admin:adm, calendarId:cal});
-  if (r.ok){ setMsg('Salvo', true); bootUsuarios(); } else setMsg(r.error||'falha', false);
-};
-
-/* ===== Dicionários p/ pickers ===== */
-async function loadAdminDicts(){
-  const r = await callJSONP({op:'admin_dicts', session});
-  if (!r.ok){ setMsg(r.error||'falha ao carregar listas', false); return; }
-
-  // Estandes
-  const dlE = $('#dlEstandes'); dlE.innerHTML='';
-  (r.estandes||[]).forEach(n=>{
-    const opt = document.createElement('option');
-    opt.value = n; dlE.appendChild(opt);
-  });
-
-  // Usuários (nome + email)
-  const dlU = $('#dlUsers'); dlU.innerHTML='';
-  usersDict = r.usuarios || []; // [{email, nome, estande}]
-  usersDict.forEach(u=>{
-    const opt = document.createElement('option');
-    opt.value = (u.nome ? `${u.nome} — ${u.email}` : u.email);
-    dlU.appendChild(opt);
-  });
-
-  // Horários base
-  horariosBaseByEst = r.horarios_base || {};
-  refreshHorasDL();
-}
-
-/* Preencher estande padrão ao escolher usuário */
-$('#adUser').addEventListener('blur', ()=>{
-  const val = $('#adUser').value.trim();
-  if (!val) return;
-  const match = usersDict.find(u => val === (u.nome ? `${u.nome} — ${u.email}` : u.email));
-  if (match && match.estande) $('#adEst').value = match.estande;
-  refreshHorasDL();
-});
-$('#adEst').addEventListener('input', refreshHorasDL);
-
-function refreshHorasDL(){
-  const est = $('#adEst').value.trim();
-  const horas = (horariosBaseByEst && horariosBaseByEst[est]) || [];
-  const dlH = $('#dlHoras'); dlH.innerHTML='';
-  horas.forEach(h=>{
-    const opt = document.createElement('option');
-    opt.value = h; dlH.appendChild(opt);
-  });
-}
-
-/* ===== Disponibilidade & Regras ===== */
-$('#btnAddDisp').onclick = async ()=>{
-  const est = $('#adEst').value.trim();
-  const d   = $('#adData').value;
-  const h   = $('#adHora').value.trim();
-  const label = $('#adUser').value.trim();
-  // Resolver email a partir do picker "Nome — email"
-  let usrEmail = '';
-  if (label){
-    const m = usersDict.find(u => label === (u.nome ? `${u.nome} — ${u.email}` : u.email));
-    usrEmail = m ? m.email : ''; // se não bater exatamente, envia vazio (vale para todos)
-  }
-  if (!est || !d || !h){ setMsg('Preencha estande, data e horário', false); return; }
-  const r = await callJSONP({op:'admin_disp_add', session, estande:est, data:d, horario:h, user_email:usrEmail});
-  setMsg(r.ok?'Disponibilidade registrada':(r.error||'falha'), r.ok);
-};
-
-$('#btnAddRegra').onclick = async ()=>{
-  const tt = $('#rgTarget').value;
-  const tv = $('#rgValue').value.trim();
-  const wd = $('#rgWeekday').value;
-  const hr = $('#rgHora').value.trim();
-  const sd = $('#rgIni').value.trim();
-  const ed = $('#rgFim').value.trim();
-  if (!wd || !hr || (tt!=='all' && !tv)){ setMsg('Preencha alvo/valor (se necessário), dia e horário', false); return; }
-  const r = await callJSONP({op:'admin_regra_add', session, target_type:tt, target_value:tv, weekday:wd, horario:hr, start_date:sd, end_date:ed});
-  setMsg(r.ok?'Regra adicionada':(r.error||'falha'), r.ok);
-};
-</script>
-</body>
-</html>
+      $('#cfgCal').value   = row[4].textConte

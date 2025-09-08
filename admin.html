@@ -54,6 +54,7 @@
       <div class="row">
         <div>
           <label>Email</label><input id="cfgEmail" type="email">
+          <label>Nome</label><input id="cfgNome">
           <label>Estande padrão</label><input id="cfgEst">
         </div>
         <div>
@@ -67,7 +68,7 @@
       <button id="btnCfgNovo" type="button" style="margin-left:8px">Novo</button>
 
       <table id="tblCfg">
-        <thead><tr><th>Email</th><th>Estande</th><th>Admin</th><th>Calendar</th><th>Ações</th></tr></thead>
+        <thead><tr><th>Nome</th><th>Email</th><th>Estande</th><th>Admin</th><th>Calendar</th><th>Ações</th></tr></thead>
         <tbody></tbody>
       </table>
     </section>
@@ -77,12 +78,20 @@
       <h3>Disponibilidade (pontual)</h3>
       <div class="row">
         <div>
-          <label>Estande</label><input id="adEst">
+          <label>Estande</label>
+          <input id="adEst" list="dlEstandes">
+          <datalist id="dlEstandes"></datalist>
+
           <label>Data</label><input id="adData" type="date">
         </div>
         <div>
-          <label>Horário (HH:mm)</label><input id="adHora" placeholder="18:30">
-          <label>Somente para e-mail (opcional)</label><input id="adUser" placeholder="usuario@dominio.com">
+          <label>Horário (HH:mm)</label>
+          <input id="adHora" list="dlHoras" placeholder="18:30">
+          <datalist id="dlHoras"></datalist>
+
+          <label>Somente para o usuário (opcional)</label>
+          <input id="adUser" list="dlUsers" placeholder="Nome — email">
+          <datalist id="dlUsers"></datalist>
         </div>
       </div>
       <div class="sp"></div>
@@ -96,10 +105,10 @@
           <label>Alvo</label>
           <select id="rgTarget">
             <option value="all">Todos</option>
-            <option value="user">Usuário</option>
+            <option value="user">Usuário (email)</option>
             <option value="estande">Estande</option>
           </select>
-          <label>Valor (email ou estande)</label><input id="rgValue">
+          <label>Valor (email ou estande)</label><input id="rgValue" placeholder="ex.: usuario@dominio.com">
         </div>
         <div>
           <label>Dia</label>
@@ -113,12 +122,8 @@
         </div>
       </div>
       <div class="row">
-        <div>
-          <label>Início (opcional)</label><input id="rgIni" type="date">
-        </div>
-        <div>
-          <label>Fim (opcional)</label><input id="rgFim" type="date">
-        </div>
+        <div><label>Início (opcional)</label><input id="rgIni" type="date"></div>
+        <div><label>Fim (opcional)</label><input id="rgFim" type="date"></div>
       </div>
       <div class="sp"></div>
       <button id="btnAddRegra" type="button">Adicionar regra</button>
@@ -127,13 +132,13 @@
     <!-- ARMAS (placeholder) -->
     <section id="secArmas" class="card" style="display:none">
       <h3>Armas (por instrutor)</h3>
-      <p class="muted">Estrutura pronta — na próxima etapa ligamos os endpoints para listar/editar as armas do instrutor.</p>
+      <p class="muted">Estrutura pronta — endpoints de CRUD podem ser ligados depois.</p>
     </section>
 
     <!-- ESTANDES (placeholder) -->
     <section id="secEstandes" class="card" style="display:none">
       <h3>Estandes</h3>
-      <p class="muted">Estrutura pronta — na próxima etapa ligamos os endpoints de cadastro/edição.</p>
+      <p class="muted">Estrutura pronta — endpoints de CRUD podem ser ligados depois.</p>
     </section>
 
     <div class="sp"></div>
@@ -162,7 +167,7 @@ function callJSONP(params, timeoutMs=20000){
 const $ = sel => document.querySelector(sel);
 function setMsg(t,ok){ const el=$('#msg'); el.textContent=t||''; el.className = ok?'ok':'err'; }
 
-let session=null, me=null, allConfigs=[];
+let session=null, me=null, allConfigs=[], usersDict=[], horariosBaseByEst={};
 
 async function onCred(res){
   try{
@@ -172,6 +177,7 @@ async function onCred(res){
     $('#auth').style.display='none'; $('#app').style.display='block';
     $('#adEst').value = who.estande || '';
     await bootUsuarios();
+    await loadAdminDicts();
   }catch(e){ setMsg('Login falhou: '+e, false); }
 }
 
@@ -203,7 +209,7 @@ async function bootUsuarios(){
   const tb = $('#tblCfg tbody'); tb.innerHTML='';
   allConfigs.forEach(c=>{
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${c.email||''}</td><td>${c.estande||''}</td><td>${c.admin?'TRUE':'FALSE'}</td><td>${c.calendarId||''}</td>
+    tr.innerHTML = `<td>${(c.nome||'')}</td><td>${c.email||''}</td><td>${c.estande||''}</td><td>${c.admin?'TRUE':'FALSE'}</td><td>${c.calendarId||''}</td>
       <td><button data-e="${c.email}">Editar</button> <button class="danger" data-d="${c.email}">Excluir</button></td>`;
     tb.appendChild(tr);
   });
@@ -212,10 +218,11 @@ async function bootUsuarios(){
   tb.querySelectorAll('button[data-e]').forEach(b=>{
     b.onclick = ()=>{
       const row = b.closest('tr').children;
-      $('#cfgEmail').value = row[0].textContent;
-      $('#cfgEst').value   = row[1].textContent;
-      $('#cfgAdmin').value = row[2].textContent==='TRUE'?'TRUE':'FALSE';
-      $('#cfgCal').value   = row[3].textContent;
+      $('#cfgNome').value  = row[0].textContent;
+      $('#cfgEmail').value = row[1].textContent;
+      $('#cfgEst').value   = row[2].textContent;
+      $('#cfgAdmin').value = row[3].textContent==='TRUE'?'TRUE':'FALSE';
+      $('#cfgCal').value   = row[4].textContent;
     };
   });
   // excluir
@@ -228,22 +235,74 @@ async function bootUsuarios(){
     };
   });
 }
-$('#btnCfgNovo').onclick = ()=>{ $('#cfgEmail').value=''; $('#cfgEst').value=''; $('#cfgAdmin').value='FALSE'; $('#cfgCal').value=''; };
+$('#btnCfgNovo').onclick = ()=>{ $('#cfgEmail').value=''; $('#cfgNome').value=''; $('#cfgEst').value=''; $('#cfgAdmin').value='FALSE'; $('#cfgCal').value=''; };
 $('#btnCfgSalvar').onclick = async ()=>{
-  const email=$('#cfgEmail').value.trim(), est=$('#cfgEst').value.trim(), adm=$('#cfgAdmin').value, cal=$('#cfgCal').value.trim();
+  const email=$('#cfgEmail').value.trim(), nome=$('#cfgNome').value.trim(), est=$('#cfgEst').value.trim(), adm=$('#cfgAdmin').value, cal=$('#cfgCal').value.trim();
   if (!email || !est){ setMsg('Preencha email e estande', false); return; }
-  const r = await callJSONP({op:'admin_cfg_upsert', session, email, estande:est, admin:adm, calendarId:cal});
+  const r = await callJSONP({op:'admin_cfg_upsert', session, email, nome, estande:est, admin:adm, calendarId:cal});
   if (r.ok){ setMsg('Salvo', true); bootUsuarios(); } else setMsg(r.error||'falha', false);
 };
+
+/* ===== Dicionários p/ pickers ===== */
+async function loadAdminDicts(){
+  const r = await callJSONP({op:'admin_dicts', session});
+  if (!r.ok){ setMsg(r.error||'falha ao carregar listas', false); return; }
+
+  // Estandes
+  const dlE = $('#dlEstandes'); dlE.innerHTML='';
+  (r.estandes||[]).forEach(n=>{
+    const opt = document.createElement('option');
+    opt.value = n; dlE.appendChild(opt);
+  });
+
+  // Usuários (nome + email)
+  const dlU = $('#dlUsers'); dlU.innerHTML='';
+  usersDict = r.usuarios || []; // [{email, nome, estande}]
+  usersDict.forEach(u=>{
+    const opt = document.createElement('option');
+    opt.value = (u.nome ? `${u.nome} — ${u.email}` : u.email);
+    dlU.appendChild(opt);
+  });
+
+  // Horários base
+  horariosBaseByEst = r.horarios_base || {};
+  refreshHorasDL();
+}
+
+/* Preencher estande padrão ao escolher usuário */
+$('#adUser').addEventListener('blur', ()=>{
+  const val = $('#adUser').value.trim();
+  if (!val) return;
+  const match = usersDict.find(u => val === (u.nome ? `${u.nome} — ${u.email}` : u.email));
+  if (match && match.estande) $('#adEst').value = match.estande;
+  refreshHorasDL();
+});
+$('#adEst').addEventListener('input', refreshHorasDL);
+
+function refreshHorasDL(){
+  const est = $('#adEst').value.trim();
+  const horas = (horariosBaseByEst && horariosBaseByEst[est]) || [];
+  const dlH = $('#dlHoras'); dlH.innerHTML='';
+  horas.forEach(h=>{
+    const opt = document.createElement('option');
+    opt.value = h; dlH.appendChild(opt);
+  });
+}
 
 /* ===== Disponibilidade & Regras ===== */
 $('#btnAddDisp').onclick = async ()=>{
   const est = $('#adEst').value.trim();
   const d   = $('#adData').value;
   const h   = $('#adHora').value.trim();
-  const usr = $('#adUser').value.trim();
+  const label = $('#adUser').value.trim();
+  // Resolver email a partir do picker "Nome — email"
+  let usrEmail = '';
+  if (label){
+    const m = usersDict.find(u => label === (u.nome ? `${u.nome} — ${u.email}` : u.email));
+    usrEmail = m ? m.email : ''; // se não bater exatamente, envia vazio (vale para todos)
+  }
   if (!est || !d || !h){ setMsg('Preencha estande, data e horário', false); return; }
-  const r = await callJSONP({op:'admin_disp_add', session, estande:est, data:d, horario:h, user_email:usr});
+  const r = await callJSONP({op:'admin_disp_add', session, estande:est, data:d, horario:h, user_email:usrEmail});
   setMsg(r.ok?'Disponibilidade registrada':(r.error||'falha'), r.ok);
 };
 
@@ -258,14 +317,6 @@ $('#btnAddRegra').onclick = async ()=>{
   const r = await callJSONP({op:'admin_regra_add', session, target_type:tt, target_value:tv, weekday:wd, horario:hr, start_date:sd, end_date:ed});
   setMsg(r.ok?'Regra adicionada':(r.error||'falha'), r.ok);
 };
-
-/* === NOVO: ao informar o e-mail do usuário, preencher estande padrão — mas editável === */
-$('#adUser').addEventListener('blur', ()=>{
-  const email = $('#adUser').value.trim().toLowerCase();
-  if (!email) return;
-  const cfg = allConfigs.find(c => String(c.email||'').toLowerCase()===email);
-  if (cfg && cfg.estande) $('#adEst').value = cfg.estande;
-});
 </script>
 </body>
 </html>

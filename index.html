@@ -2,34 +2,38 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
-  <title>Painel Admin — IAT</title>
+  <title>Agendamento de Prova</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
     :root{--bg:#f6f7fb;--card:#fff;--fg:#111;--muted:#666;--pri:#1a73e8}
     body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--fg);margin:0}
-    .wrap{max-width:1100px;margin:32px auto;padding:0 16px}
+    .wrap{max-width:980px;margin:32px auto;padding:0 16px}
     .card{background:var(--card);border-radius:16px;padding:16px 18px;box-shadow:0 12px 32px rgba(20,20,20,.06)}
-    h1{font-size:26px;margin:6px 0 16px}
-    nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-    nav a{padding:10px 14px;border-radius:12px;border:1px solid #d9dbe0;color:#111;text-decoration:none;background:#fff}
-    nav a.active{background:#e8f0fe;border-color:#bcd2fe}
+    h1{font-size:28px;margin:6px 0 16px}
+    .muted{color:var(--muted)}
     .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
     label{display:block;font-size:13px;margin-top:10px}
     input,select,textarea{width:100%;padding:10px 12px;border:1px solid #d9dbe0;border-radius:10px;background:#fff;font:inherit}
+    textarea{min-height:80px;resize:vertical}
     button{background:var(--pri);color:#fff;border:0;padding:10px 16px;border-radius:12px;cursor:pointer}
-    .muted{color:var(--muted)}
-    table{width:100%;border-collapse:collapse;margin-top:12px}
-    th,td{border-bottom:1px solid #eee;padding:8px 6px;text-align:left;font-size:14px}
-    .sp{height:10px}
+    button[disabled]{opacity:.55;cursor:not-allowed}
     .ok{color:#137333}.err{color:#b00020}
-    .danger{background:#fee2e2;color:#991b1b;border:0}
+    img{border-radius:50%}
+    .sp{height:10px}
+    pre{white-space:pre-wrap;background:#0f1115;color:#dfe1e5;padding:10px;border-radius:10px;font-size:12px}
+    .inline{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .pill{display:inline-flex;align-items:center;gap:8px;border:1px solid #d9dbe0;border-radius:999px;padding:6px 10px;margin:6px 6px 0 0}
+    .esp-item{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;border:1px solid #e6e8ef;border-radius:12px;padding:8px 10px;margin-top:8px;background:#fff}
+    .disabled-note{font-size:12px;color:#6b7280}
+    .link{margin-left:8px;font-size:14px}
   </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>Painel Admin</h1>
+  <h1>Agendamento de Prova</h1>
 
+  <!-- LOGIN -->
   <div id="auth" class="card">
     <div id="g_id_onload"
          data-client_id="826003708445-8612nadjq2l7ahb4ht0bpq47csp1rbpb.apps.googleusercontent.com"
@@ -37,124 +41,134 @@
          data-auto_prompt="false"></div>
     <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-shape="pill"></div>
     <div class="sp"></div>
-    <div class="muted">Apenas contas marcadas como admin.</div>
+    <div class="muted">Entre com um e-mail cadastrado na Config.</div>
   </div>
 
-  <div id="app" style="display:none">
-    <nav>
-      <a href="#usuarios"  id="tabUsuarios"  class="active">Usuários (Config)</a>
-      <a href="#disp"      id="tabDisp">Disponibilidade & Regras</a>
-      <a href="#armas"     id="tabArmas">Armas</a>
-      <a href="#estandes"  id="tabEstandes">Estandes</a>
-    </nav>
-
-    <!-- USUÁRIOS -->
-    <section id="secUsuarios" class="card">
-      <h3>Usuários ↔ Estande padrão</h3>
-      <div class="row">
-        <div>
-          <label>Email</label><input id="cfgEmail" type="email">
-          <label>Nome</label><input id="cfgNome">
-          <label>Estande padrão</label><input id="cfgEst">
-        </div>
-        <div>
-          <label>Admin?</label>
-          <select id="cfgAdmin"><option value="FALSE">FALSE</option><option value="TRUE">TRUE</option></select>
-          <label>Calendar ID (opcional)</label><input id="cfgCal">
-        </div>
+  <!-- APP -->
+  <div id="app" class="card" style="display:none">
+    <div class="inline">
+      <img id="foto" width="48" height="48" alt="">
+      <div>
+        <div id="boas"></div>
+        <div class="muted" id="info"></div>
       </div>
-      <div class="sp"></div>
-      <button id="btnCfgSalvar" type="button">Salvar</button>
-      <button id="btnCfgNovo" type="button" style="margin-left:8px">Novo</button>
-
-      <table id="tblCfg">
-        <thead><tr><th>Nome</th><th>Email</th><th>Estande</th><th>Admin</th><th>Calendar</th><th>Ações</th></tr></thead>
-        <tbody></tbody>
-      </table>
-    </section>
-
-    <!-- DISPONIBILIDADE -->
-    <section id="secDisp" class="card" style="display:none">
-      <h3>Disponibilidade (pontual)</h3>
-      <div class="row">
-        <div>
-          <label>Estande</label>
-          <input id="adEst" list="dlEstandes">
-          <datalist id="dlEstandes"></datalist>
-
-          <label>Data</label><input id="adData" type="date">
-        </div>
-        <div>
-          <label>Horário (HH:mm)</label>
-          <input id="adHora" list="dlHoras" placeholder="18:30">
-          <datalist id="dlHoras"></datalist>
-
-          <label>Somente para o usuário (opcional)</label>
-          <input id="adUser" list="dlUsers" placeholder="Nome — email">
-          <datalist id="dlUsers"></datalist>
-        </div>
-      </div>
-      <div class="sp"></div>
-      <button id="btnAddDisp" type="button">Autorizar</button>
-
-      <div class="sp"></div><hr/><div class="sp"></div>
-
-      <h3>Regra recorrente semanal</h3>
-      <div class="row">
-        <div>
-          <label>Alvo</label>
-          <select id="rgTarget">
-            <option value="all">Todos</option>
-            <option value="user">Usuário (email)</option>
-            <option value="estande">Estande</option>
-          </select>
-          <label>Valor (email ou estande)</label><input id="rgValue" placeholder="ex.: usuario@dominio.com">
-        </div>
-        <div>
-          <label>Dia</label>
-          <select id="rgWeekday">
-            <option value="SEG">Segunda</option><option value="TER">Terça</option>
-            <option value="QUA">Quarta</option><option value="QUI">Quinta</option>
-            <option value="SEX">Sexta</option><option value="SAB">Sábado</option>
-            <option value="DOM">Domingo</option>
-          </select>
-          <label>Horário</label><input id="rgHora" placeholder="18:30">
-        </div>
-      </div>
-      <div class="row">
-        <div><label>Início (opcional)</label><input id="rgIni" type="date"></div>
-        <div><label>Fim (opcional)</label><input id="rgFim" type="date"></div>
-      </div>
-      <div class="sp"></div>
-      <button id="btnAddRegra" type="button">Adicionar regra</button>
-    </section>
-
-    <!-- ARMAS (placeholder) -->
-    <section id="secArmas" class="card" style="display:none">
-      <h3>Armas (por instrutor)</h3>
-      <p class="muted">Estrutura pronta — endpoints de CRUD podem ser ligados depois.</p>
-    </section>
-
-    <!-- ESTANDES (placeholder) -->
-    <section id="secEstandes" class="card" style="display:none">
-      <h3>Estandes</h3>
-      <p class="muted">Estrutura pronta — endpoints de CRUD podem ser ligados depois.</p>
-    </section>
+      <div style="flex:1"></div>
+      <button id="btnPing" type="button">Testar backend (ping)</button>
+      <a id="adminLink" class="link" href="admin.html" style="display:none" target="_blank">Abrir Painel Admin</a>
+    </div>
 
     <div class="sp"></div>
-    <div id="msg" class="muted"></div>
+    <div class="inline">
+      <label style="margin:0">Estande:</label>
+      <!-- não-admin: texto; admin: input -->
+      <input id="estSel" placeholder="Estande" style="max-width:280px;display:none">
+      <span id="estTxt" class="pill"></span>
+    </div>
+
+    <div class="sp"></div><hr/><div class="sp"></div>
+
+    <!-- FORMULÁRIO DE AGENDAMENTO -->
+    <form id="frm">
+      <div class="row">
+        <div>
+          <label>Nome do atirador</label>
+          <input id="nome" required>
+        </div>
+        <div>
+          <label>CPF</label>
+          <input id="cpf" required inputmode="numeric" maxlength="14" placeholder="000.000.000-00">
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Telefone</label>
+          <input id="tel" required placeholder="(00) 90000-0000" maxlength="16">
+        </div>
+        <div>
+          <label>CEP</label>
+          <input id="cep" required inputmode="numeric" maxlength="9" placeholder="00000-000">
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Logradouro</label>
+          <input id="logr" required>
+        </div>
+        <div>
+          <label>Número</label>
+          <input id="num" required>
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Complemento</label>
+          <input id="comp">
+        </div>
+        <div>
+          <label>Bairro</label>
+          <input id="bairro" required>
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Cidade</label>
+          <input id="cidade" required>
+        </div>
+        <div>
+          <label>UF</label>
+          <input id="uf" required maxlength="2">
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Data</label>
+          <input id="data" type="date" required>
+        </div>
+        <div>
+          <label>Horário</label>
+          <select id="horario" required></select>
+          <small class="muted" id="slotsHint"></small>
+        </div>
+      </div>
+
+      <!-- ESPÉCIES + ARMA PADRÃO/SELEÇÃO -->
+      <div>
+        <label>Espécie(s) de arma &nbsp;<span class="disabled-note" id="espHint"></span></label>
+        <div id="espWrap"></div>
+      </div>
+
+      <label>Observações</label>
+      <textarea id="obs" placeholder="Escreva aqui..."></textarea>
+
+      <div class="sp"></div>
+      <button id="btnSubmit" type="submit" disabled title="Defina um estande para habilitar">Enviar agendamento</button>
+      <span id="msg" class="muted"></span>
+    </form>
+
+    <div class="sp"></div><hr/><div class="sp"></div>
+    <div class="muted">Log</div>
+    <pre id="log"></pre>
   </div>
 </div>
 
 <script>
+/*** CONFIG ***/
 const GAS_URL   = 'https://script.google.com/macros/s/AKfycbwrYWQ3gVE3wSobk3w049hva6R5wmN9WayxuUh9itl1qvOQVaHXF9_JxEmgSQ9YMliy/exec';
+const CLIENT_ID = '826003708445-8612nadjq2l7ahb4ht0bpq47csp1rbpb.apps.googleusercontent.com';
 
+/*** JSONP helper ***/
 function callJSONP(params, timeoutMs=20000){
   return new Promise((resolve, reject)=>{
     const cb = 'cb_' + Math.random().toString(36).slice(2);
     const url = GAS_URL + (GAS_URL.includes('?')?'&':'?') +
       Object.entries(params).map(([k,v])=>encodeURIComponent(k)+'='+encodeURIComponent(v)).join('&') +
       '&callback=' + encodeURIComponent(cb) + '&t=' + Date.now();
+    log('JSONP URL: ' + url);
     const s = document.createElement('script'); s.async = true; s.referrerPolicy='no-referrer';
     let done=false;
     function cleanup(){ try{delete window[cb]}catch{}; s.remove(); }
@@ -164,159 +178,225 @@ function callJSONP(params, timeoutMs=20000){
     setTimeout(()=>{ if(!done){ cleanup(); reject(new Error('timeout')); } }, timeoutMs);
   });
 }
+
+/*** UI helpers ***/
 const $ = sel => document.querySelector(sel);
+function log(t){ const el=$('#log'); el.textContent += (t+'\n'); el.scrollTop = el.scrollHeight; }
 function setMsg(t,ok){ const el=$('#msg'); el.textContent=t||''; el.className = ok?'ok':'err'; }
 
-let session=null, me=null, allConfigs=[], usersDict=[], horariosBaseByEst={};
+/*** Máscaras & CEP ***/
+function maskCPF(v){ v=v.replace(/\D/g,'').slice(0,11); return v.replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d{1,2})$/,'$1-$2'); }
+function maskTEL(v){ v=v.replace(/\D/g,'').slice(0,11); return v.replace(/^(\d{2})(\d)/,'($1) $2').replace(/(\d{5})(\d{4})$/,'$1-$2'); }
+function maskCEP(v){ v=v.replace(/\D/g,'').slice(0,8); return v.replace(/(\d{5})(\d{1,3})$/,'$1-$2'); }
+function cpfOk(cpf){
+  cpf = (cpf||'').replace(/\D/g,''); if (!cpf||cpf.length!==11||/^(\d)\1+$/.test(cpf)) return false;
+  let s=0; for(let i=0;i<9;i++) s+=parseInt(cpf[i])*(10-i); let d=11-(s%11); if(d>9)d=0; if(d!=cpf[9]) return false;
+  s=0; for(let i=0;i<10;i++) s+=parseInt(cpf[i])*(11-i); d=11-(s%11); if(d>9)d=0; return d==cpf[10];
+}
+async function buscaCEP(cep){
+  cep = (cep||'').replace(/\D/g,'');
+  if (cep.length!==8) return;
+  try{
+    const r = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+    const j = await r.json();
+    if (j.erro){ setMsg('CEP não encontrado',false); return; }
+    $('#logr').value   = j.logradouro || '';
+    $('#bairro').value = j.bairro     || '';
+    $('#cidade').value = j.localidade || '';
+    $('#uf').value     = j.uf         || '';
+  }catch(e){ setMsg('Erro no ViaCEP',false); }
+}
 
+/*** Estado global ***/
+let session=null, profile=null, isAdmin=false, estandeAtual='';
+let especies=[], armasPorEsp={}, padraoPorEsp={};
+
+/*** Helpers de estande/guard-rail ***/
+function getEstandeAtual(){ return isAdmin ? ($('#estSel').value || estandeAtual) : estandeAtual; }
+function toggleSubmitForEstande(){
+  const hasEst = !!getEstandeAtual();
+  const btn = $('#btnSubmit');
+  btn.disabled = !hasEst;
+  btn.title = hasEst ? '' : 'Defina um estande para habilitar';
+}
+
+/*** Login callback ***/
 async function onCred(res){
   try{
     const who = await callJSONP({op:'whoami', idToken: res.credential});
-    if (!who.ok || !who.admin){ $('#auth').style.display='block'; setMsg('Acesso negado (não-admin).', false); return; }
-    session = who.session; me = who;
-    $('#auth').style.display='none'; $('#app').style.display='block';
-    $('#adEst').value = who.estande || '';
-    await bootUsuarios();
-    await loadAdminDicts();
-  }catch(e){ setMsg('Login falhou: '+e, false); }
-}
+    if (!who.ok) { setMsg('Falha no login: '+(who.error||''), false); return; }
 
-/* ===== Navegação simples ===== */
-const tabs = [
-  ['tabUsuarios','secUsuarios'],
-  ['tabDisp','secDisp'],
-  ['tabArmas','secArmas'],
-  ['tabEstandes','secEstandes'],
-];
-tabs.forEach(([t,s])=>{
-  $('#'+t).onclick = (ev)=>{
-    ev.preventDefault();
-    tabs.forEach(([tt,ss])=>{
-      $('#'+tt).classList.remove('active');
-      $('#'+ss).style.display = 'none';
-    });
-    $('#'+t).classList.add('active');
-    $('#'+s).style.display = 'block';
-  };
-});
+    session = who.session;
+    profile = {email: who.email, name: who.name, picture: who.picture};
+    isAdmin = !!who.admin;
+    estandeAtual = who.estande || '';
 
-/* ===== Usuários (Config) ===== */
-async function bootUsuarios(){
-  const r = await callJSONP({op:'admin_boot', session});
-  if (!r.ok){ setMsg('Erro ao carregar configs: '+(r.error||''), false); return; }
-  allConfigs = r.configs || [];
+    $('#auth').style.display='none';
+    $('#app').style.display='block';
 
-  const tb = $('#tblCfg tbody'); tb.innerHTML='';
-  allConfigs.forEach(c=>{
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${(c.nome||'')}</td><td>${c.email||''}</td><td>${c.estande||''}</td><td>${c.admin?'TRUE':'FALSE'}</td><td>${c.calendarId||''}</td>
-      <td><button data-e="${c.email}">Editar</button> <button class="danger" data-d="${c.email}">Excluir</button></td>`;
-    tb.appendChild(tr);
-  });
+    $('#boas').textContent = `Olá, ${who.name}! 🎉`;
+    $('#info').textContent = `${who.email}`;
+    $('#foto').src = who.picture || '';
+    $('#nome').value = who.name || '';
+    if (isAdmin){
+      $('#adminLink').style.display='inline';
+      $('#estSel').style.display='inline-block';
+      $('#estSel').value = estandeAtual;
+      $('#estTxt').style.display='none';
+    } else {
+      $('#adminLink').style.display='none';
+      $('#estSel').style.display='none';
+      $('#estTxt').textContent = estandeAtual || '(sem estande)';
+      $('#estTxt').style.display='inline-flex';
+    }
 
-  // editar
-  tb.querySelectorAll('button[data-e]').forEach(b=>{
-    b.onclick = ()=>{
-      const row = b.closest('tr').children;
-      $('#cfgNome').value  = row[0].textContent;
-      $('#cfgEmail').value = row[1].textContent;
-      $('#cfgEst').value   = row[2].textContent;
-      $('#cfgAdmin').value = row[3].textContent==='TRUE'?'TRUE':'FALSE';
-      $('#cfgCal').value   = row[4].textContent;
-    };
-  });
-  // excluir
-  tb.querySelectorAll('button[data-d]').forEach(b=>{
-    b.onclick = async ()=>{
-      const email = b.getAttribute('data-d');
-      if (!confirm('Excluir '+email+'?')) return;
-      const out = await callJSONP({op:'admin_cfg_delete', session, email});
-      if (out.ok) { setMsg('Excluído', true); bootUsuarios(); } else setMsg(out.error||'falha', false);
-    };
-  });
-}
-$('#btnCfgNovo').onclick = ()=>{ $('#cfgEmail').value=''; $('#cfgNome').value=''; $('#cfgEst').value=''; $('#cfgAdmin').value='FALSE'; $('#cfgCal').value=''; };
-$('#btnCfgSalvar').onclick = async ()=>{
-  const email=$('#cfgEmail').value.trim(), nome=$('#cfgNome').value.trim(), est=$('#cfgEst').value.trim(), adm=$('#cfgAdmin').value, cal=$('#cfgCal').value.trim();
-  if (!email || !est){ setMsg('Preencha email e estande', false); return; }
-  const r = await callJSONP({op:'admin_cfg_upsert', session, email, nome, estande:est, admin:adm, calendarId:cal});
-  if (r.ok){ setMsg('Salvo', true); bootUsuarios(); } else setMsg(r.error||'falha', false);
-};
+    if (!estandeAtual){
+      setMsg('Sua conta não tem estande padrão definido. Peça ao administrador para configurar um estande padrão em "Usuários (Config)".', false);
+    }
+    toggleSubmitForEstande();
 
-/* ===== Dicionários p/ pickers ===== */
-async function loadAdminDicts(){
-  const r = await callJSONP({op:'admin_dicts', session});
-  if (!r.ok){ setMsg(r.error||'falha ao carregar listas', false); return; }
+    const lst = await callJSONP({op:'listar', session});
+    if (!lst.ok){ setMsg('Erro ao carregar listas: '+(lst.error||''), false); return; }
 
-  // Estandes
-  const dlE = $('#dlEstandes'); dlE.innerHTML='';
-  (r.estandes||[]).forEach(n=>{
-    const opt = document.createElement('option');
-    opt.value = n; dlE.appendChild(opt);
-  });
+    especies   = lst.especies || [];
+    armasPorEsp = lst.armas_por_especie || {};
+    padraoPorEsp = lst.padrao_por_especie || {};
 
-  // Usuários (nome + email)
-  const dlU = $('#dlUsers'); dlU.innerHTML='';
-  usersDict = r.usuarios || []; // [{email, nome, estande}]
-  usersDict.forEach(u=>{
-    const opt = document.createElement('option');
-    opt.value = (u.nome ? `${u.nome} — ${u.email}` : u.email);
-    dlU.appendChild(opt);
-  });
+    renderEspecies();
 
-  // Horários base
-  horariosBaseByEst = r.horarios_base || {};
-  refreshHorasDL();
-}
-
-/* Preencher estande padrão ao escolher usuário */
-$('#adUser').addEventListener('blur', ()=>{
-  const val = $('#adUser').value.trim();
-  if (!val) return;
-  const match = usersDict.find(u => val === (u.nome ? `${u.nome} — ${u.email}` : u.email));
-  if (match && match.estande) $('#adEst').value = match.estande;
-  refreshHorasDL();
-});
-$('#adEst').addEventListener('input', refreshHorasDL);
-
-function refreshHorasDL(){
-  const est = $('#adEst').value.trim();
-  const horas = (horariosBaseByEst && horariosBaseByEst[est]) || [];
-  const dlH = $('#dlHoras'); dlH.innerHTML='';
-  horas.forEach(h=>{
-    const opt = document.createElement('option');
-    opt.value = h; dlH.appendChild(opt);
-  });
-}
-
-/* ===== Disponibilidade & Regras ===== */
-$('#btnAddDisp').onclick = async ()=>{
-  const est = $('#adEst').value.trim();
-  const d   = $('#adData').value;
-  const h   = $('#adHora').value.trim();
-  const label = $('#adUser').value.trim();
-  // Resolver email a partir do picker "Nome — email"
-  let usrEmail = '';
-  if (label){
-    const m = usersDict.find(u => label === (u.nome ? `${u.nome} — ${u.email}` : u.email));
-    usrEmail = m ? m.email : ''; // se não bater exatamente, envia vazio (vale para todos)
+    $('#data').value = '';
+    $('#horario').innerHTML = '';
+    $('#slotsHint').textContent = 'Escolha uma data para carregar os horários';
+    $('#espHint').textContent   = isAdmin ? 'Você pode trocar a arma de cada espécie.' : 'A arma padrão de cada espécie será usada.';
+  }catch(e){
+    setMsg('Erro de autenticação: '+e, false);
   }
-  if (!est || !d || !h){ setMsg('Preencha estande, data e horário', false); return; }
-  const r = await callJSONP({op:'admin_disp_add', session, estande:est, data:d, horario:h, user_email:usrEmail});
-  setMsg(r.ok?'Disponibilidade registrada':(r.error||'falha'), r.ok);
-};
+}
 
-$('#btnAddRegra').onclick = async ()=>{
-  const tt = $('#rgTarget').value;
-  const tv = $('#rgValue').value.trim();
-  const wd = $('#rgWeekday').value;
-  const hr = $('#rgHora').value.trim();
-  const sd = $('#rgIni').value.trim();
-  const ed = $('#rgFim').value.trim();
-  if (!wd || !hr || (tt!=='all' && !tv)){ setMsg('Preencha alvo/valor (se necessário), dia e horário', false); return; }
-  const r = await callJSONP({op:'admin_regra_add', session, target_type:tt, target_value:tv, weekday:wd, horario:hr, start_date:sd, end_date:ed});
-  setMsg(r.ok?'Regra adicionada':(r.error||'falha'), r.ok);
+/*** Render de espécies e selects ***/
+function renderEspecies(){
+  const wrap = $('#espWrap'); wrap.innerHTML = '';
+  especies.forEach(esp=>{
+    const chkId = 'chk_'+esp.replace(/\s+/g,'_');
+    const selId = 'sel_'+esp.replace(/\s+/g,'_');
+
+    const div = document.createElement('div');
+    div.className = 'esp-item';
+    div.innerHTML = `
+      <label class="inline" for="${chkId}">
+        <input type="checkbox" id="${chkId}" value="${esp}">
+        ${esp}
+      </label>
+      <select id="${selId}" data-esp="${esp}"></select>
+      <small class="muted">padrão: <b>${padraoPorEsp[esp]||'-'}</b></small>
+    `;
+    wrap.appendChild(div);
+
+    const sel = div.querySelector('select');
+    const armas = armasPorEsp[esp] || [];
+    armas.forEach(a=>{
+      const o=document.createElement('option'); o.value=o.textContent=a; sel.appendChild(o);
+    });
+    const pad = padraoPorEsp[esp];
+    if (pad) sel.value = pad;
+
+    if (!isAdmin) { sel.disabled = true; }
+
+    const chk = div.querySelector('input[type=checkbox]');
+    chk.addEventListener('change', ()=>{
+      sel.disabled = !isAdmin || !chk.checked;
+      if (!chk.checked) sel.value = padraoPorEsp[esp] || (armas[0]||'');
+    });
+  });
+}
+
+/*** Slots: data/estande ***/
+$('#data').addEventListener('change', ()=>{
+  loadSlots();
+  toggleSubmitForEstande();
+});
+$('#estSel').addEventListener('input', ()=>{
+  if($('#data').value) loadSlots();
+  toggleSubmitForEstande();
+});
+
+async function loadSlots(){
+  const d = $('#data').value, est = getEstandeAtual();
+  if (!d || !est) return;
+  try{
+    const r = await callJSONP({op:'slots', session, date:d, estande:est});
+    if (!r.ok){ setMsg('Erro slots: '+(r.error||''), false); return; }
+    const h = $('#horario'); h.innerHTML='';
+    (r.slots||[]).forEach(x=>{ const o=document.createElement('option'); o.value=o.textContent=x; h.appendChild(o); });
+    $('#slotsHint').textContent = r.slots?.length ? `${r.slots.length} horário(s) disponíveis` : 'Sem horários autorizados';
+  }catch(e){ setMsg('Erro slots: '+e.message,false); }
+}
+
+/*** Eventos simples ***/
+$('#btnPing').onclick = async ()=>{
+  try{ const r = await callJSONP({op:'ping'}); setMsg('Backend OK: '+ r.ts, true); }
+  catch(e){ setMsg('Erro no backend: '+e.message, false); }
 };
+$('#cep').addEventListener('input', e => e.target.value = maskCEP(e.target.value));
+$('#cep').addEventListener('blur',  e => buscaCEP(e.target.value));
+$('#cpf').addEventListener('input', e => e.target.value = maskCPF(e.target.value));
+$('#tel').addEventListener('input', e => e.target.value = maskTEL(e.target.value));
+
+/*** Submit ***/
+$('#frm').addEventListener('submit', async (ev)=>{
+  ev.preventDefault();
+
+  if (!getEstandeAtual()){
+    setMsg('Defina um estande para enviar o agendamento.', false);
+    toggleSubmitForEstande();
+    return;
+  }
+
+  setMsg('Enviando...', true);
+
+  const marcadas = Array.from(document.querySelectorAll('#espWrap input[type=checkbox]:checked')).map(x=>x.value);
+
+  const armasEscolhidas = marcadas.map(esp=>{
+    const sel = document.querySelector(`#sel_${esp.replace(/\s+/g,'_')}`);
+    if (isAdmin && sel) return `${esp}:${sel.value}`;
+    const pad = padraoPorEsp[esp] || (armasPorEsp[esp]?.[0]||'');
+    return `${esp}:${pad}`;
+  }).join('; ');
+
+  const payload = {
+    op:'submit',
+    session,
+    nome_atirador: $('#nome').value.trim(),
+    cpf: $('#cpf').value,
+    telefone: $('#tel').value,
+    cep: $('#cep').value,
+    logradouro: $('#logr').value,
+    numero: $('#num').value,
+    complemento: $('#comp').value,
+    bairro: $('#bairro').value,
+    cidade: $('#cidade').value,
+    uf: $('#uf').value,
+    data: $('#data').value,            // yyyy-mm-dd
+    horario: $('#horario').value,
+    especies: marcadas.join(', '),
+    armas_escolhidas: armasEscolhidas,
+    obs: $('#obs').value
+  };
+
+  if (!payload.nome_atirador){ setMsg('Informe o nome do atirador.', false); return; }
+  if (!cpfOk(payload.cpf)){ setMsg('CPF inválido', false); return; }
+  if (!payload.data || !payload.horario){ setMsg('Informe data e horário.', false); return; }
+
+  try{
+    const r = await callJSONP(payload);
+    if (!r.ok){ setMsg('Erro: '+(r.error||'falha'), false); return; }
+    setMsg(r.message || 'Agendado!', true);
+    log(JSON.stringify(r, null, 2));
+    $('#frm').reset();
+    $('#slotsHint').textContent = '';
+    toggleSubmitForEstande();
+  }catch(e){ setMsg('Erro ao enviar: '+e.message, false); }
+});
 </script>
 </body>
 </html>

@@ -231,4 +231,117 @@ async function bootUsuarios(){
       $('#cfgEmail').value = row[1].textContent;
       $('#cfgEst').value   = row[2].textContent;
       $('#cfgAdmin').value = row[3].textContent==='TRUE'?'TRUE':'FALSE';
-      $('#cfgCal').value   = row[4].textConte
+      $('#cfgCal').value   = row[4].textContent;
+    };
+  });
+  // excluir
+  tb.querySelectorAll('button[data-d]').forEach(b=>{
+    b.onclick = async ()=>{
+      const email = b.getAttribute('data-d');
+      if (!confirm('Excluir '+email+'?')) return;
+      const out = await callJSONP({op:'admin_cfg_delete', session, email});
+      if (out.ok) { setMsg('Excluído', true); bootUsuarios(); } else setMsg(out.error||'falha', false);
+    };
+  });
+}
+$('#btnCfgNovo').onclick = ()=>{ $('#cfgEmail').value=''; $('#cfgNome').value=''; $('#cfgEst').value=''; $('#cfgAdmin').value='FALSE'; $('#cfgCal').value=''; };
+$('#btnCfgSalvar').onclick = async ()=>{
+  const email=$('#cfgEmail').value.trim(), nome=$('#cfgNome').value.trim(), est=$('#cfgEst').value.trim(), adm=$('#cfgAdmin').value, cal=$('#cfgCal').value.trim();
+  if (!email || !est){ setMsg('Preencha email e estande', false); return; }
+  const r = await callJSONP({op:'admin_cfg_upsert', session, email, nome, estande:est, admin:adm, calendarId:cal});
+  if (r.ok){ setMsg('Salvo', true); bootUsuarios(); } else setMsg(r.error||'falha', false);
+};
+
+/* ===== Dicionários p/ pickers ===== */
+async function loadAdminDicts(){
+  const r = await callJSONP({op:'admin_dicts', session});
+  if (!r.ok){ setMsg(r.error||'falha ao carregar listas', false); return; }
+
+  // Estandes
+  const dlE = $('#dlEstandes'); dlE.innerHTML='';
+  (r.estandes||[]).forEach(n=>{
+    const opt = document.createElement('option');
+    opt.value = n; dlE.appendChild(opt);
+  });
+
+  // Usuários (nome + email)
+  const dlU = $('#dlUsers'); dlU.innerHTML='';
+  usersDict = r.usuarios || []; // [{email, nome, estande}]
+  usersDict.forEach(u=>{
+    const opt = document.createElement('option');
+    opt.value = (u.nome ? `${u.nome} — ${u.email}` : u.email);
+    dlU.appendChild(opt);
+  });
+
+  // Horários base
+  horariosBaseByEst = r.horarios_base || {};
+  refreshHorasDL();
+}
+
+/* Preencher estande padrão ao escolher usuário */
+$('#adUser').addEventListener('blur', ()=>{
+  const val = $('#adUser').value.trim();
+  if (!val) return;
+  const match = usersDict.find(u => val === (u.nome ? `${u.nome} — ${u.email}` : u.email));
+  if (match && match.estande) $('#adEst').value = match.estande;
+  refreshHorasDL();
+});
+$('#adEst').addEventListener('input', refreshHorasDL);
+
+function refreshHorasDL(){
+  const est = $('#adEst').value.trim();
+  const horas = (horariosBaseByEst && horariosBaseByEst[est]) || [];
+  const dlH = $('#dlHoras'); dlH.innerHTML='';
+  horas.forEach(h=>{
+    const opt = document.createElement('option');
+    opt.value = h; dlH.appendChild(opt);
+  });
+}
+
+/* ===== Disponibilidade (adicionar/listar/excluir) ===== */
+$('#btnAddDisp').onclick = async ()=>{
+  const est = $('#adEst').value.trim();
+  const d   = $('#adData').value;
+  const h   = $('#adHora').value.trim();
+  const label = $('#adUser').value.trim();
+  let usrEmail = '';
+  if (label){
+    const m = usersDict.find(u => label === (u.nome ? `${u.nome} — ${u.email}` : u.email));
+    usrEmail = m ? m.email : '';
+  }
+  if (!est || !d || !h){ setMsg('Preencha estande, data e horário', false); return; }
+  const r = await callJSONP({op:'admin_disp_add', session, estande:est, data:d, horario:h, user_email:usrEmail});
+  setMsg(r.ok?'Disponibilidade registrada':(r.error||'falha'), r.ok);
+  if (r.ok) await loadDisponibilidades();
+};
+
+async function loadDisponibilidades(){
+  const r = await callJSONP({op:'admin_disp_list', session});
+  if (!r.ok){ setMsg(r.error||'falha ao listar disponibilidades', false); return; }
+  const tb = $('#tblDisp tbody'); tb.innerHTML='';
+  (r.rows||[]).forEach(x=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${x.estande||''}</td>
+      <td>${x.data||''}</td>
+      <td>${x.horario||''}</td>
+      <td>${x.user_email||''}</td>
+      <td>${x.authorized_by||''}</td>
+      <td><button class="danger" data-del="${[x.estande,x.data,x.horario,x.user_email].map(encodeURIComponent).join('|')}">Excluir</button></td>
+    `;
+    tb.appendChild(tr);
+  });
+
+  tb.querySelectorAll('button[data-del]').forEach(btn=>{
+    btn.onclick = async ()=>{
+      const [est, d, h, usr] = btn.getAttribute('data-del').split('|').map(decodeURIComponent);
+      if (!confirm(`Excluir disponibilidade?\n${est} • ${d} • ${h}\n${usr||'(para todos)'}`)) return;
+      const r = await callJSONP({op:'admin_disp_del', session, estande:est, data:d, horario:h, user_email:(usr||'')});
+      setMsg(r.ok?'Disponibilidade excluída':(r.error||'falha'), r.ok);
+      if (r.ok) await loadDisponibilidades();
+    };
+  });
+}
+</script>
+</body>
+</html>

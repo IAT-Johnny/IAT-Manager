@@ -124,13 +124,13 @@
       <button id="btnAddRegra" type="button">Adicionar regra</button>
     </section>
 
-    <!-- ARMAS (placeholder para próxima etapa) -->
+    <!-- ARMAS (placeholder) -->
     <section id="secArmas" class="card" style="display:none">
       <h3>Armas (por instrutor)</h3>
       <p class="muted">Estrutura pronta — na próxima etapa ligamos os endpoints para listar/editar as armas do instrutor.</p>
     </section>
 
-    <!-- ESTANDES (placeholder para próxima etapa) -->
+    <!-- ESTANDES (placeholder) -->
     <section id="secEstandes" class="card" style="display:none">
       <h3>Estandes</h3>
       <p class="muted">Estrutura pronta — na próxima etapa ligamos os endpoints de cadastro/edição.</p>
@@ -162,7 +162,7 @@ function callJSONP(params, timeoutMs=20000){
 const $ = sel => document.querySelector(sel);
 function setMsg(t,ok){ const el=$('#msg'); el.textContent=t||''; el.className = ok?'ok':'err'; }
 
-let session=null, me=null;
+let session=null, me=null, allConfigs=[];
 
 async function onCred(res){
   try{
@@ -198,8 +198,10 @@ tabs.forEach(([t,s])=>{
 async function bootUsuarios(){
   const r = await callJSONP({op:'admin_boot', session});
   if (!r.ok){ setMsg('Erro ao carregar configs: '+(r.error||''), false); return; }
+  allConfigs = r.configs || [];
+
   const tb = $('#tblCfg tbody'); tb.innerHTML='';
-  (r.configs||[]).forEach(c=>{
+  allConfigs.forEach(c=>{
     const tr = document.createElement('tr');
     tr.innerHTML = `<td>${c.email||''}</td><td>${c.estande||''}</td><td>${c.admin?'TRUE':'FALSE'}</td><td>${c.calendarId||''}</td>
       <td><button data-e="${c.email}">Editar</button> <button class="danger" data-d="${c.email}">Excluir</button></td>`;
@@ -256,6 +258,14 @@ $('#btnAddRegra').onclick = async ()=>{
   const r = await callJSONP({op:'admin_regra_add', session, target_type:tt, target_value:tv, weekday:wd, horario:hr, start_date:sd, end_date:ed});
   setMsg(r.ok?'Regra adicionada':(r.error||'falha'), r.ok);
 };
+
+/* === NOVO: ao informar o e-mail do usuário, preencher estande padrão — mas editável === */
+$('#adUser').addEventListener('blur', ()=>{
+  const email = $('#adUser').value.trim().toLowerCase();
+  if (!email) return;
+  const cfg = allConfigs.find(c => String(c.email||'').toLowerCase()===email);
+  if (cfg && cfg.estande) $('#adEst').value = cfg.estande;
+});
 </script>
 </body>
 </html>

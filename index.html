@@ -17,6 +17,7 @@
     input,select,textarea{width:100%;padding:10px 12px;border:1px solid #d9dbe0;border-radius:10px;background:#fff;font:inherit}
     textarea{min-height:80px;resize:vertical}
     button{background:var(--pri);color:#fff;border:0;padding:10px 16px;border-radius:12px;cursor:pointer}
+    button[disabled]{opacity:.55;cursor:not-allowed}
     .ok{color:#137333}.err{color:#b00020}
     img{border-radius:50%}
     .sp{height:10px}
@@ -145,7 +146,7 @@
       <textarea id="obs" placeholder="Escreva aqui..."></textarea>
 
       <div class="sp"></div>
-      <button type="submit">Enviar agendamento</button>
+      <button id="btnSubmit" type="submit" disabled title="Defina um estande para habilitar">Enviar agendamento</button>
       <span id="msg" class="muted"></span>
     </form>
 
@@ -210,6 +211,15 @@ async function buscaCEP(cep){
 let session=null, profile=null, isAdmin=false, estandeAtual='';
 let especies=[], armasPorEsp={}, padraoPorEsp={};
 
+/*** Helpers de estande/guard-rail ***/
+function getEstandeAtual(){ return isAdmin ? ($('#estSel').value || estandeAtual) : estandeAtual; }
+function toggleSubmitForEstande(){
+  const hasEst = !!getEstandeAtual();
+  const btn = $('#btnSubmit');
+  btn.disabled = !hasEst;
+  btn.title = hasEst ? '' : 'Defina um estande para habilitar';
+}
+
 /*** Login callback ***/
 async function onCred(res){
   try{
@@ -239,6 +249,12 @@ async function onCred(res){
       $('#estTxt').textContent = estandeAtual || '(sem estande)';
       $('#estTxt').style.display='inline-flex';
     }
+
+    // Aviso e guard-rail quando não há estande padrão
+    if (!estandeAtual){
+      setMsg('Sua conta não tem estande padrão definido. Peça ao administrador para configurar um estande padrão em "Usuários (Config)".', false);
+    }
+    toggleSubmitForEstande();
 
     // listas base
     const lst = await callJSONP({op:'listar', session});
@@ -300,9 +316,14 @@ function renderEspecies(){
 }
 
 /*** Slots: data/estande ***/
-function getEstandeAtual(){ return isAdmin ? ($('#estSel').value || estandeAtual) : estandeAtual; }
-$('#data').addEventListener('change', loadSlots);
-$('#estSel').addEventListener('input', ()=>{ if($('#data').value) loadSlots(); });
+$('#data').addEventListener('change', ()=>{
+  loadSlots();
+  toggleSubmitForEstande();
+});
+$('#estSel').addEventListener('input', ()=>{
+  if($('#data').value) loadSlots();
+  toggleSubmitForEstande();
+});
 
 async function loadSlots(){
   const d = $('#data').value, est = getEstandeAtual();
@@ -329,6 +350,14 @@ $('#tel').addEventListener('input', e => e.target.value = maskTEL(e.target.value
 /*** Submit ***/
 $('#frm').addEventListener('submit', async (ev)=>{
   ev.preventDefault();
+
+  // Guard-rail final (caso o DOM não tenha atualizado ainda)
+  if (!getEstandeAtual()){
+    setMsg('Defina um estande para enviar o agendamento.', false);
+    toggleSubmitForEstande();
+    return;
+  }
+
   setMsg('Enviando...', true);
 
   const marcadas = Array.from(document.querySelectorAll('#espWrap input[type=checkbox]:checked'))
@@ -373,6 +402,7 @@ $('#frm').addEventListener('submit', async (ev)=>{
     log(JSON.stringify(r, null, 2));
     $('#frm').reset();
     $('#slotsHint').textContent = '';
+    toggleSubmitForEstande(); // mantém regra após reset
   }catch(e){ setMsg('Erro ao enviar: '+e.message, false); }
 });
 </script>
